@@ -5,7 +5,7 @@
 /*.toml export-ignore
 /*.xml export-ignore
 /*.yml export-ignore
+/run export-ignore
 /docs/ export-ignore
 /tests/ export-ignore
 /bench/ export-ignore
-run export-ignore
