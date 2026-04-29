@@ -1,11 +1,14 @@
 # Changelog
 
-## [Unreleased](https://github.com/duoncode/cli/compare/0.1.1...HEAD)
+## [Unreleased](https://github.com/duoncode/cli/compare/0.1.2...HEAD)
+
+No notable changes since the last release.
+
+## [0.1.2](https://github.com/duoncode/cli/releases/tag/0.1.2) (2026-04-29)
 
 ### Breaking
 
-- Renamed the aggregate Composer script from `all` to `ci` and removed the
-  `benchmark` and automatic config-sync scripts.
+- Renamed the aggregate Composer script from `all` to `ci` and removed the `benchmark` and automatic config-sync scripts.
 
 ### Added
 
@@ -13,25 +16,20 @@
 
 ### Changed
 
-- Switched development tooling to `duon/dev` 3.x, `.dist` PHPUnit/Psalm configs,
-  and `.coverage` coverage output.
+- Switched development tooling to `duon/dev` 3.x, `.dist` PHPUnit/Psalm configs, and `.coverage` coverage output.
 
 ### Fixed
 
 - Fixed package homepage metadata to point to `duon.sh/cli`.
-- Fixed command metadata handling so `0` prefixes, groups, and descriptions are
-  not treated as missing.
+- Fixed command metadata handling so `0` prefixes, groups, and descriptions are not treated as missing.
 
 ## [0.1.1](https://github.com/duoncode/cli/releases/tag/0.1.1) (2026-01-29)
 
 ### Changed
 
 - Breaking: Renamed Composer scripts: `check` -> `types`, `ci` -> `all`.
-- Breaking: Removed the `composer github` script; CI now runs the equivalent
-  commands directly.
-- Switched development tool dependencies to `duon/dev` and relaxed Composer
-  stability (`minimum-stability: dev` with `prefer-stable`) to allow installing
-  newer Psalm builds.
+- Breaking: Removed the `composer github` script; CI now runs the equivalent commands directly.
+- Switched development tool dependencies to `duon/dev` and relaxed Composer stability (`minimum-stability: dev` with `prefer-stable`) to allow installing newer Psalm builds.
 
 ## [0.1.0](https://github.com/duoncode/cli/releases/tag/0.1.0) (2026-01-28)
 
@@ -39,11 +37,9 @@ Initial version.
 
 ### Added
 
-- Added command-specific help, a built-in `commands` command for autocomplete,
-  and richer help/indent helpers.
+- Added command-specific help, a built-in `commands` command for autocomplete, and richer help/indent helpers.
 - Added `info`, `success`, `warn`, `error`, and `echoln` helpers on `Command`.
 - Added support for `--key=value` options, including values containing `=`.
-- Added output color handling improvements, including background-only colors and
-  conditional coloring based on terminal support.
+- Added output color handling improvements, including background-only colors and conditional coloring based on terminal support.
 - Added the `debug` flag on `Runner`.
 - Added helpers for composing command collections and running scripts.
