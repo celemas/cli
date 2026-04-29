@@ -6,7 +6,7 @@ namespace Duon\Cli;
 
 final class Output
 {
-	private mixed $stream;
+	private mixed $stream = null;
 	private array $fg = [
 		'black' => [0, 30],
 		'gray' => [1, 30],
@@ -134,7 +134,7 @@ final class Output
 
 	private function getStream(): mixed
 	{
-		if (!isset($this->stream)) {
+		if ($this->stream === null) {
 			$this->stream = fopen($this->target, mode: 'w');
 		}
 

@@ -25,7 +25,7 @@ final class Opts
 
 	public function has(string $key, bool $default = false): bool
 	{
-		if (isset($this->opts[$key])) {
+		if (array_key_exists($key, $this->opts)) {
 			return true;
 		}
 
@@ -86,7 +86,7 @@ final class Opts
 					$value = implode('=', $parts);
 				}
 
-				if (isset($opts[$key])) {
+				if (array_key_exists($key, $opts)) {
 					if ($value !== null) {
 						$opts[$key]->set($value);
 					}
@@ -105,11 +105,11 @@ final class Opts
 
 	private function validate(string $key): void
 	{
-		if (!isset($this->opts[$key])) {
+		if (!array_key_exists($key, $this->opts)) {
 			throw new ValueError("Unknown option: {$key}");
 		}
 
-		if (isset($this->opts[$key]) && !$this->opts[$key]->isset()) {
+		if (!$this->opts[$key]->isset()) {
 			throw new ValueError("No value given for {$key}");
 		}
 	}
