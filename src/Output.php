@@ -110,7 +110,7 @@ final class Output
 			$width = $max;
 		}
 
-		$lines = explode("\n", wordwrap($text, $width, "\n"));
+		$lines = explode("\n", wordwrap($text, $width, break: "\n"));
 
 		return implode("\n", array_map(function ($line) use ($spaces) {
 			return $spaces . $line;
@@ -137,7 +137,7 @@ final class Output
 	private function getStream(): mixed
 	{
 		if (!isset($this->stream)) {
-			$this->stream = fopen($this->target, 'w');
+			$this->stream = fopen($this->target, mode: 'w');
 		}
 
 		return $this->stream;
