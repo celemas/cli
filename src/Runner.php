@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Duon\Cli;
 
-use BadMethodCallException;
 use Throwable;
 use ValueError;
 

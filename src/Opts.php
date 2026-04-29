@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Duon\Cli;
 
-use PhpParser\NodeVisitor\FirstFindingVisitor;
 use ValueError;
 
 /**
