@@ -43,7 +43,9 @@ final class Output
 		'white' => 47,
 	];
 
-	public function __construct(protected readonly string $target) {}
+	public function __construct(
+		protected readonly string $target,
+	) {}
 
 	public function echo(string $text, string $color = '', string $background = ''): void
 	{
@@ -52,7 +54,9 @@ final class Output
 
 	public function echoln(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write(($color || $background ? $this->color($text, $color, $background) : $text) . PHP_EOL);
+		$this->write(
+			($color || $background ? $this->color($text, $color, $background) : $text) . PHP_EOL,
+		);
 	}
 
 	protected function write(string $text): void
@@ -96,6 +100,7 @@ final class Output
 			// Need a way to force $width to be null in a sane way
 			// @codeCoverageIgnoreStart
 			$width = 80;
+
 			// @codeCoverageIgnoreEnd
 		}
 
@@ -155,9 +160,11 @@ final class Output
 				return sapi_windows_vt100_support(STDOUT);
 			}
 
-			return getenv('ANSICON') !== false
+			return (
+				getenv('ANSICON') !== false
 				|| getenv('ConEmuANSI') === 'ON'
-				|| getenv('TERM') === 'xterm';
+				|| getenv('TERM') === 'xterm'
+			);
 		}
 
 		if (function_exists('stream_isatty')) {
@@ -165,6 +172,7 @@ final class Output
 		}
 
 		return false;
+
 		// @codeCoverageIgnoreEnd
 	}
 }

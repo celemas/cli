@@ -58,7 +58,9 @@ class RunnerTest extends TestCase
 		$_SERVER['argv'] = ['run'];
 		$runner = $this->getRunner();
 
-		$this->expectOutputRegex('/Available.*Bar.*bar:.*stuff.*Errors.*err:.*err.*Foo.*foo:.*drivel.*stuff/s');
+		$this->expectOutputRegex(
+			'/Available.*Bar.*bar:.*stuff.*Errors.*err:.*err.*Foo.*foo:.*drivel.*stuff/s',
+		);
 		$runner->run();
 	}
 
