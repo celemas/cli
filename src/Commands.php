@@ -22,13 +22,19 @@ final class Commands
 			foreach ($commands as $command) {
 				$this->add($command);
 			}
-		} elseif ($commands instanceof Commands) {
+
+			return;
+		}
+
+		if ($commands instanceof Commands) {
 			foreach ($commands->get() as $command) {
 				$this->addCommand($command);
 			}
-		} else {
-			$this->addCommand($commands);
+
+			return;
 		}
+
+		$this->addCommand($commands);
 	}
 
 	public function get(): array

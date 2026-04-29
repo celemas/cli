@@ -76,27 +76,31 @@ final class Opts
 		$key = null;
 
 		foreach ($_SERVER['argv'] ?? [] as $arg) {
-			if (str_starts_with($arg, '-')) {
-				$key = $arg;
-				$value = null;
-
-				if (str_contains($key, '=')) {
-					$parts = explode('=', $key);
-					$key = array_shift($parts);
-					$value = implode('=', $parts);
-				}
-
-				if (array_key_exists($key, $opts)) {
-					if ($value !== null) {
-						$opts[$key]->set($value);
-					}
-				} else {
-					$opts[$key] = new Opt($value);
-				}
-			} else {
+			if (!str_starts_with($arg, '-')) {
 				if ($key !== null) {
 					$opts[$key]->set($arg);
 				}
+
+				continue;
+			}
+
+			$key = $arg;
+			$value = null;
+
+			if (str_contains($key, '=')) {
+				$parts = explode('=', $key);
+				$key = array_shift($parts);
+				$value = implode('=', $parts);
+			}
+
+			if (!array_key_exists($key, $opts)) {
+				$opts[$key] = new Opt($value);
+
+				continue;
+			}
+
+			if ($value !== null) {
+				$opts[$key]->set($value);
 			}
 		}
 

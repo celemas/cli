@@ -13,11 +13,7 @@ final class Opt
 
 	public function __construct(?string $value = null)
 	{
-		if ($value !== null) {
-			$this->values = [$value];
-		} else {
-			$this->values = [];
-		}
+		$this->values = $value === null ? [] : [$value];
 	}
 
 	public function set(string $value): void

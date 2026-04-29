@@ -136,9 +136,11 @@ abstract class Command
 		if ($withOptions) {
 			$this->echo("{$usage} [options]\n\n");
 			$this->echoln($this->color('Options:', 'brown'));
-		} else {
-			$this->echo("{$usage}\n");
+
+			return;
 		}
+
+		$this->echo("{$usage}\n");
 	}
 
 	protected function helpOption(string $option, string $description): void

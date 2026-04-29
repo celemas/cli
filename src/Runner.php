@@ -40,16 +40,16 @@ final class Runner
 			$name = strtolower($command->name());
 			$prefix = $command->prefix();
 
-			if (array_key_exists($prefix, $groups)) {
-				$groups[$prefix]['commands'][$name] = $command;
-			} else {
+			if (!array_key_exists($prefix, $groups)) {
 				$group = $command->group();
 				$group = $group === '' ? 'General' : $group;
 				$groups[$prefix] = [
 					'title' => $prefix === '' ? 'General' : $group,
-					'commands' => [$name => $command],
+					'commands' => [],
 				];
 			}
+
+			$groups[$prefix]['commands'][$name] = $command;
 
 			$this->list[$name][] = $command;
 
@@ -141,11 +141,11 @@ final class Runner
 
 					$arg = $argv[2] ?? null;
 
-					if ($arg !== null) {
-						$cmd = strtolower($arg);
-					} else {
+					if ($arg === null) {
 						return $this->showHelp();
 					}
+
+					$cmd = strtolower($arg);
 				}
 
 				if ($cmd === 'commands') {
@@ -217,16 +217,16 @@ final class Runner
 			}
 
 			throw new ValueError('Ambiguous command', self::AMBIGUOUS);
-		} else {
-			if (str_contains($cmd, ':')) {
-				[$group, $name] = explode(':', $cmd);
+		}
 
-				if (
-					array_key_exists($group, $this->toc)
-					&& array_key_exists($name, $this->toc[$group]['commands'])
-				) {
-					return $this->toc[$group]['commands'][$name];
-				}
+		if (str_contains($cmd, ':')) {
+			[$group, $name] = explode(':', $cmd);
+
+			if (
+				array_key_exists($group, $this->toc)
+				&& array_key_exists($name, $this->toc[$group]['commands'])
+			) {
+				return $this->toc[$group]['commands'][$name];
 			}
 		}
 
