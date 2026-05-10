@@ -1,34 +1,34 @@
 {
-	"name": "duon/cli",
-	"description": "Duon cli tools/runner",
+	"name": "celemas/cli",
+	"description": "Celemas cli tools runner",
 	"type": "library",
 	"license": "MIT",
 	"authors": [
 		{
 			"name": "Ernst",
-			"email": "ernst@duon.sh"
+			"email": "ernst@celemas.dev"
 		}
 	],
-	"homepage": "https://duon.sh/cli",
+	"homepage": "https://celemas.dev/cli",
 	"keywords": [
-		"duon",
+		"celemas",
 		"cli"
 	],
 	"autoload": {
 		"psr-4": {
-			"Duon\\Cli\\": "src/"
+			"Celemas\\Cli\\": "src/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Duon\\Cli\\Tests\\": "tests"
+			"Celemas\\Cli\\Tests\\": "tests"
 		}
 	},
 	"require": {
 		"php": "^8.5"
 	},
 	"require-dev": {
-		"duon/dev": "^3.0"
+		"celemas/dev": "^4.0"
 	},
 	"scripts": {
 		"test": "./vendor/bin/phpunit --testdox --no-coverage --colors=always",
