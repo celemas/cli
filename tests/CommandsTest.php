@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests;
+namespace Celemas\Cli\Tests;
 
-use Duon\Cli\Commands;
-use Duon\Cli\Tests\Fixtures\BarStuff;
-use Duon\Cli\Tests\Fixtures\Erring;
-use Duon\Cli\Tests\Fixtures\FooDrivel;
-use Duon\Cli\Tests\Fixtures\FooStuff;
+use Celemas\Cli\Commands;
+use Celemas\Cli\Tests\Fixtures\BarStuff;
+use Celemas\Cli\Tests\Fixtures\Erring;
+use Celemas\Cli\Tests\Fixtures\FooDrivel;
+use Celemas\Cli\Tests\Fixtures\FooStuff;
 
 class CommandsTest extends TestCase
 {

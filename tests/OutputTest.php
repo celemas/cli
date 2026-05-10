@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests;
+namespace Celemas\Cli\Tests;
 
-use Duon\Cli\Output;
+use Celemas\Cli\Output;
 
 class OutputTest extends TestCase
 {

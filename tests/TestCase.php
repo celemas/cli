@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests;
+namespace Celemas\Cli\Tests;
 
-use Duon\Cli\Commands;
-use Duon\Cli\Runner;
+use Celemas\Cli\Commands;
+use Celemas\Cli\Runner;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 
 /**

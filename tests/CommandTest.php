@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests;
+namespace Celemas\Cli\Tests;
 
-use Duon\Cli\Output;
-use Duon\Cli\Tests\Fixtures\Erring;
-use Duon\Cli\Tests\Fixtures\FooStuff;
+use Celemas\Cli\Output;
+use Celemas\Cli\Tests\Fixtures\Erring;
+use Celemas\Cli\Tests\Fixtures\FooStuff;
 use RuntimeException;
 
 class CommandTest extends TestCase

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests\Fixtures;
+namespace Celemas\Cli\Tests\Fixtures;
 
-use Duon\Cli\Command;
+use Celemas\Cli\Command;
 use Exception;
 
 class Erring extends Command

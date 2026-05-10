@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests;
+namespace Celemas\Cli\Tests;
 
-use Duon\Cli\Runner;
+use Celemas\Cli\Runner;
 
 class RunnerTest extends TestCase
 {

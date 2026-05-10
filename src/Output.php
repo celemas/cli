@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli;
+namespace Celemas\Cli;
 
 final class Output
 {

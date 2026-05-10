@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Duon\Cli\Tests;
+namespace Celemas\Cli\Tests;
 
-use Duon\Cli\Opts;
+use Celemas\Cli\Opts;
 use ValueError;
 
 class OptsTest extends TestCase
