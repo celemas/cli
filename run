@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
 
-use Duon\Cli\Runner;
-use Duon\Cli\Commands;
-use Duon\Cli\Tests\Fixtures\BarStuff;
-use Duon\Cli\Tests\Fixtures\Erring;
-use Duon\Cli\Tests\Fixtures\FooDrivel;
-use Duon\Cli\Tests\Fixtures\FooStuff;
+use Celemas\Cli\Runner;
+use Celemas\Cli\Commands;
+use Celemas\Cli\Tests\Fixtures\BarStuff;
+use Celemas\Cli\Tests\Fixtures\Erring;
+use Celemas\Cli\Tests\Fixtures\FooDrivel;
+use Celemas\Cli\Tests\Fixtures\FooStuff;
 
 $runner = new Runner(new Commands([
     new BarStuff(),
