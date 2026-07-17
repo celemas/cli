@@ -114,4 +114,22 @@ class OutputTest extends TestCase
 		$this->assertSame($first, $second);
 		$this->assertSame('    Lorem ipsum dolor sit amet', $first[0]);
 	}
+
+	public function testErrorWritersTargetTheErrorStream(): void
+	{
+		$err = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
+		$output = new Output('php://output', $err);
+
+		ob_start();
+		$output->echoErr('boom');
+		$output->echolnErr('bang', 'red');
+		$stdout = (string) ob_get_clean();
+
+		$contents = (string) file_get_contents($err);
+		unlink($err);
+
+		$this->assertSame('', $stdout);
+		$this->assertStringContainsString('boom', $contents);
+		$this->assertStringContainsString('bang', $contents);
+	}
 }

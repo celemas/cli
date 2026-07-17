@@ -25,6 +25,8 @@ class TestCase extends BaseTestCase
 
 	public function getRunner(): Runner
 	{
-		return new Runner($this->getCommands());
+		// Route the error stream into the same buffer so output assertions
+		// can capture messages that now go to STDERR.
+		return new Runner($this->getCommands(), output: 'php://output', errorOutput: 'php://output');
 	}
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Celemas\Cli\Tests\Fixtures;
 
+use Celemas\Cli\Args;
 use Celemas\Cli\Command;
 
 class FooStuff extends Command
@@ -12,11 +13,11 @@ class FooStuff extends Command
 	protected string $group = 'Foo';
 	protected string $description = "Prints Foo's stuff to stdout";
 
-	public function run(): int
+	public function run(Args $args): int
 	{
 		$this->echo("Foo's stuff");
 
-		return 0;
+		return self::SUCCESS;
 	}
 
 	public function help(): void

@@ -7,6 +7,7 @@ namespace Celemas\Cli;
 final class Output
 {
 	private mixed $stream = null;
+	private mixed $errorStream = null;
 	private ?int $width = null;
 	private array $fg = [
 		'black' => [0, 30],
@@ -45,25 +46,39 @@ final class Output
 	];
 
 	public function __construct(
-		protected readonly string $target,
+		protected readonly string $target = 'php://output',
+		protected readonly string $errorTarget = 'php://stderr',
 	) {}
 
 	public function echo(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write($color || $background ? $this->color($text, $color, $background) : $text);
+		$this->write($this->stdout(), $this->styled($text, $color, $background));
 	}
 
 	public function echoln(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write(
-			($color || $background ? $this->color($text, $color, $background) : $text) . PHP_EOL,
-		);
+		$this->write($this->stdout(), $this->styled($text, $color, $background) . PHP_EOL);
 	}
 
-	private function write(string $text): void
+	public function echoErr(string $text, string $color = '', string $background = ''): void
 	{
-		fwrite($this->getStream(), $text);
-		fflush($this->stream);
+		$this->write($this->stderr(), $this->styled($text, $color, $background));
+	}
+
+	public function echolnErr(string $text, string $color = '', string $background = ''): void
+	{
+		$this->write($this->stderr(), $this->styled($text, $color, $background) . PHP_EOL);
+	}
+
+	private function styled(string $text, string $color, string $background): string
+	{
+		return $color || $background ? $this->color($text, $color, $background) : $text;
+	}
+
+	private function write(mixed $stream, string $text): void
+	{
+		fwrite($stream, $text);
+		fflush($stream);
 	}
 
 	public function color(string $text, string $color = '', string $background = ''): string
@@ -144,13 +159,14 @@ final class Output
 		return $text;
 	}
 
-	private function getStream(): mixed
+	private function stdout(): mixed
 	{
-		if ($this->stream === null) {
-			$this->stream = fopen($this->target, mode: 'w');
-		}
+		return $this->stream ??= fopen($this->target, mode: 'w');
+	}
 
-		return $this->stream;
+	private function stderr(): mixed
+	{
+		return $this->errorStream ??= fopen($this->errorTarget, mode: 'w');
 	}
 
 	private function hasColorSupport(): bool

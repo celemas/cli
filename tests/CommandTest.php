@@ -95,7 +95,8 @@ class CommandTest extends TestCase
 	public function testWarnMethod(): void
 	{
 		$foo = new FooStuff();
-		$output = new Output('php://output');
+		// warn() writes to STDERR; capture it by pointing the error stream here.
+		$output = new Output('php://output', 'php://output');
 		$foo->output($output);
 
 		ob_start();
@@ -108,7 +109,7 @@ class CommandTest extends TestCase
 	public function testErrorMethod(): void
 	{
 		$foo = new FooStuff();
-		$output = new Output('php://output');
+		$output = new Output('php://output', 'php://output');
 		$foo->output($output);
 
 		ob_start();

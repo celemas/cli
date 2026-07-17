@@ -26,9 +26,10 @@ final class Runner
 	public function __construct(
 		Commands $commands,
 		string $output = 'php://output',
+		string $errorOutput = 'php://stderr',
 		private bool $debug = false,
 	) {
-		$this->output = new Output($output);
+		$this->output = new Output($output, $errorOutput);
 		$this->orderCommands($commands);
 	}
 
@@ -135,53 +136,57 @@ final class Runner
 		return 0;
 	}
 
-	public function run(): int|string
+	public function run(): int
 	{
 		try {
 			$argv = $_SERVER['argv'] ?? [];
-
 			$arg = $argv[1] ?? null;
 
-			if ($arg !== null) {
-				$cmd = strtolower($arg);
-				$isHelpCall = false;
-
-				if ($cmd === 'help') {
-					$isHelpCall = true;
-
-					$arg = $argv[2] ?? null;
-
-					if ($arg === null) {
-						return $this->showHelp();
-					}
-
-					$cmd = strtolower($arg);
-				}
-
-				if ($cmd === 'commands') {
-					return $this->showCommands();
-				}
-
-				try {
-					return $this->runCommand($this->getCommand($cmd), $isHelpCall);
-				} catch (ValueError $e) {
-					if ($e->getCode() === self::AMBIGUOUS) {
-						return $this->showAmbiguousMessage($cmd);
-					}
-
-					throw $e;
-				}
+			if ($arg === null) {
+				return $this->showHelp();
 			}
 
-			return $this->showHelp();
+			$cmd = strtolower($arg);
+			$isHelpCall = false;
+
+			if ($cmd === 'help') {
+				$isHelpCall = true;
+				$arg = $argv[2] ?? null;
+
+				if ($arg === null) {
+					return $this->showHelp();
+				}
+
+				$cmd = strtolower($arg);
+			}
+
+			if ($cmd === 'commands') {
+				return $this->showCommands();
+			}
+
+			$args = new Args(array_slice($argv, offset: 2));
+
+			if ($args->has('--help') || $args->has('-h')) {
+				$isHelpCall = true;
+			}
+
+			try {
+				return $this->runCommand($this->getCommand($cmd), $isHelpCall, $args);
+			} catch (ValueError $e) {
+				if ($e->getCode() === self::AMBIGUOUS) {
+					return $this->showAmbiguousMessage($cmd);
+				}
+
+				throw $e;
+			}
 		} catch (Throwable $e) {
-			$this->output->echo("Error while running command '");
-			$this->output->echo($_SERVER['argv'][1] ?? '<no command given>');
-			$this->output->echo("':\n\n" . $e->getMessage() . "\n");
+			$this->output->echoErr("Error while running command '");
+			$this->output->echoErr($_SERVER['argv'][1] ?? '<no command given>');
+			$this->output->echoErr("':\n\n" . $e->getMessage() . "\n");
 
 			if ($this->debug) {
-				$this->output->echoln("\nTraceback:", 'yellow');
-				$this->output->echoln($e->getTraceAsString());
+				$this->output->echolnErr("\nTraceback:", 'yellow');
+				$this->output->echolnErr($e->getTraceAsString());
 			}
 
 			return 1;
@@ -208,13 +213,13 @@ final class Runner
 
 	private function showAmbiguousMessage(string $cmd): int
 	{
-		$this->output->echo("Ambiguous command. Please add the group name:\n\n");
+		$this->output->echoErr("Ambiguous command. Please add the group name:\n\n");
 		asort($this->list[$cmd]);
 
 		foreach ($this->list[$cmd] as $command) {
 			$prefix = $this->output->color($command->prefix(), 'brown');
 			$name = strtolower($command->name());
-			$this->output->echoln("  {$prefix}:{$name}");
+			$this->output->echolnErr("  {$prefix}:{$name}");
 		}
 
 		return 1;
@@ -246,7 +251,7 @@ final class Runner
 		throw new ValueError('Command not found', self::NOTFOUND);
 	}
 
-	private function runCommand(Command $command, bool $isHelpCall): int|string
+	private function runCommand(Command $command, bool $isHelpCall, Args $args): int
 	{
 		if ($isHelpCall) {
 			$command->output($this->output)->help();
@@ -254,6 +259,6 @@ final class Runner
 			return 0;
 		}
 
-		return $command->output($this->output)->run();
+		return $command->output($this->output)->run($args);
 	}
 }

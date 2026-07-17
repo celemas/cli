@@ -11,13 +11,16 @@ use RuntimeException;
  */
 abstract class Command
 {
+	public const int SUCCESS = 0;
+	public const int FAILURE = 1;
+
 	protected string $name = '';
 	protected string $group = '';
 	protected string $prefix = '';
 	protected string $description = '';
 	protected ?Output $output = null;
 
-	abstract public function run(): string|int;
+	abstract public function run(Args $args): int;
 
 	public function name(): string
 	{
@@ -73,12 +76,12 @@ abstract class Command
 
 	public function warn(string $message): void
 	{
-		$this->echoln($message, 'yellow');
+		$this->out()->echolnErr($message, 'yellow');
 	}
 
 	public function error(string $message): void
 	{
-		$this->echoln($message, 'red');
+		$this->out()->echolnErr($message, 'red');
 	}
 
 	public function color(string $text, string $color, string $background = ''): string

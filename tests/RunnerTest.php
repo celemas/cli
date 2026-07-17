@@ -155,9 +155,98 @@ class RunnerTest extends TestCase
 	public function testRunFailingCommandWithDebug(): void
 	{
 		$_SERVER['argv'] = ['run', 'err'];
-		$runner = new Runner($this->getCommands(), 'php://output', debug: true);
+		$runner = new Runner(
+			$this->getCommands(),
+			output: 'php://output',
+			errorOutput: 'php://output',
+			debug: true,
+		);
 
 		$this->expectOutputRegex("/Error while.*'err'.*Red herring.*Traceback:/s");
+		$runner->run();
+	}
+
+	public function testCommandHelpViaLongFlag(): void
+	{
+		$_SERVER['argv'] = ['run', 'foo:stuff', '--help'];
+		$runner = $this->getRunner();
+
+		$this->expectOutputRegex('/php run foo:stuff.*Options:/s');
+		$runner->run();
+	}
+
+	public function testCommandHelpViaShortFlag(): void
+	{
+		$_SERVER['argv'] = ['run', 'bar:stuff', '-h'];
+		$runner = $this->getRunner();
+
+		$this->expectOutputRegex('/php run bar:stuff/');
+		$runner->run();
+	}
+
+	public function testRunReturnsSuccessCode(): void
+	{
+		$_SERVER['argv'] = ['run', 'drivel'];
+
+		ob_start();
+		$code = $this->getRunner()->run();
+		ob_get_clean();
+
+		$this->assertSame(0, $code);
+	}
+
+	public function testRunReturnsFailureCodeFromCommand(): void
+	{
+		$_SERVER['argv'] = ['run', 'fail'];
+		$runner = new Runner(new Commands([new Fixtures\Failing()]));
+
+		$this->assertSame(1, $runner->run());
+	}
+
+	public function testRunReturnsFailureCodeOnException(): void
+	{
+		$_SERVER['argv'] = ['run', 'err'];
+
+		ob_start();
+		$code = $this->getRunner()->run();
+		ob_get_clean();
+
+		$this->assertSame(1, $code);
+	}
+
+	public function testErrorsGoToStderrNotStdout(): void
+	{
+		$_SERVER['argv'] = ['run', 'unknown'];
+		$err = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
+		$runner = new Runner($this->getCommands(), output: 'php://output', errorOutput: $err);
+
+		ob_start();
+		$code = $runner->run();
+		$stdout = (string) ob_get_clean();
+
+		$contents = (string) file_get_contents($err);
+		unlink($err);
+
+		$this->assertSame(1, $code);
+		$this->assertSame('', $stdout);
+		$this->assertStringContainsString('Command not found', $contents);
+	}
+
+	public function testCommandReceivesParsedArgs(): void
+	{
+		$_SERVER['argv'] = ['run', 'greet', 'Ada', '--greeting=Hi'];
+		$runner = new Runner(new Commands([new Fixtures\Greet()]));
+
+		$this->expectOutputString('Hi, Ada');
+		$runner->run();
+	}
+
+	public function testCommandUsesArgDefaults(): void
+	{
+		$_SERVER['argv'] = ['run', 'greet'];
+		$runner = new Runner(new Commands([new Fixtures\Greet()]));
+
+		$this->expectOutputString('Hello, World');
 		$runner->run();
 	}
 }
