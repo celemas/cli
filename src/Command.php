@@ -53,24 +53,12 @@ abstract class Command
 
 	public function echo(string $message, string $color = '', string $background = ''): void
 	{
-		if ($this->output) {
-			$this->output->echo($message, $color, $background);
-
-			return;
-		}
-
-		throw new RuntimeException('Output missing');
+		$this->out()->echo($message, $color, $background);
 	}
 
 	public function echoln(string $message, string $color = '', string $background = ''): void
 	{
-		if ($this->output) {
-			$this->output->echoln($message, $color, $background);
-
-			return;
-		}
-
-		throw new RuntimeException('Output missing');
+		$this->out()->echoln($message, $color, $background);
 	}
 
 	public function info(string $message): void
@@ -95,11 +83,7 @@ abstract class Command
 
 	public function color(string $text, string $color, string $background = ''): string
 	{
-		if ($this->output) {
-			return $this->output->color($text, $color, $background);
-		}
-
-		throw new RuntimeException('Output missing');
+		return $this->out()->color($text, $color, $background);
 	}
 
 	public function indent(
@@ -107,11 +91,12 @@ abstract class Command
 		int $indent,
 		?int $max = null,
 	): string {
-		if ($this->output) {
-			return $this->output->indent($text, $indent, $max);
-		}
+		return $this->out()->indent($text, $indent, $max);
+	}
 
-		throw new RuntimeException('Output missing');
+	private function out(): Output
+	{
+		return $this->output ?? throw new RuntimeException('Output missing');
 	}
 
 	public function help(): void
