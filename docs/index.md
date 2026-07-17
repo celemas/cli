@@ -15,7 +15,7 @@ composer require celemas/cli
 Create a Command:
 
 ```php
-use Celemas\Cli\Command;
+use Celemas\Cli\{Args, Command};
 
 class MyCommand extends Command {
     /**
@@ -43,13 +43,19 @@ class MyCommand extends Command {
     protected string $description = 'This is my command description';
 
     /**
-     * The entry point of the command.
+     * The entry point of the command. Receives the parsed arguments and
+     * returns an exit code (use the SUCCESS / FAILURE constants).
      */
-    public function run(): int
+    public function run(Args $args): int
     {
         $this->echo("Run my command\n");
 
-        // Output helpers with color support
+        // Read options and positionals from the injected Args
+        $name = $args->positional(0, 'world');   // first positional, or default
+        $conn = $args->opt('--conn', 'sqlite');  // --conn=value, or default
+        $force = $args->has('--force');          // boolean flag
+
+        // Output helpers with color support (warn/error go to STDERR)
         $this->info("Informational message");
         $this->success("Success message");
         $this->warn("Warning message");
@@ -58,7 +64,7 @@ class MyCommand extends Command {
         // echoln adds a newline automatically
         $this->echoln("Message with automatic newline");
 
-        return 0;
+        return self::SUCCESS;
     }
 
     /**
@@ -83,8 +89,8 @@ class MyCommand extends Command {
 - `echoln(string $message, string $color = '', string $background = '')` - Output text with newline
 - `info(string $message)` - Output informational message
 - `success(string $message)` - Output success message (green)
-- `warn(string $message)` - Output warning message (yellow)
-- `error(string $message)` - Output error message (red)
+- `warn(string $message)` - Output warning message (yellow, to STDERR)
+- `error(string $message)` - Output error message (red, to STDERR)
 - `color(string $text, string $color, string $background = '')` Return colored text
 - `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text
 
@@ -94,22 +100,34 @@ Foreground: `black`, `gray`/`grey`, `red`, `lightred`, `green`, `lightgreen`, `b
 
 Background: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `magenta`, `cyan`, `gray`/`grey`, `white`
 
-### Command-Line Options
+### Command-Line Arguments
 
-Options support both space and equals syntax:
+The Runner parses the command's arguments and passes them to `run(Args $args)`:
 
 ```bash
-php run mycommand --key value
-php run mycommand --key=value
-php run mycommand --key="value with spaces"
+php run mycommand up --conn=sqlite --force
 ```
 
-Use the `Opts` class to parse command-line options in your commands.
+- `--key=value` sets an option; repeat the flag to collect multiple values.
+- A dashed token without `=`, such as `--force` or `-h`, is a boolean flag.
+- Every other token is a positional argument.
+
+```php
+$args->positional(0);            // "up" (or null / a default)
+$args->positionals();            // ["up"]
+$args->opt('--conn', 'pgsql');   // "sqlite" (or the default)
+$args->opts('--tag');            // all values for a repeated option
+$args->has('--force');           // true
+```
+
+A positional cannot start with `-` — such a token is read as a flag.
 
 ### Built-in Commands
 
 - `help` - Display help for all commands or a specific command
 - `commands` - List all command names (useful for shell autocomplete)
+
+You can also show a command's help with `php run <command> --help` or `-h`.
 
 ### Debug Mode
 
@@ -133,7 +151,8 @@ $commands = new Commands([new MyCommand()]);
 
 // Optional: enable debug mode to show stack traces on errors
 $runner = new Runner($commands, debug: false);
-$runner->run();
+
+exit($runner->run());
 ```
 
 Run the command:

@@ -13,11 +13,12 @@ A command line interface helper.
 ## Features
 
 - Simple command creation with automatic help generation
+- Parsed options and positional arguments via an injected `Args` object
 - Built-in color support for terminal output
-- Command-specific help with `php run help <command>`
+- Command help with `php run help <command>` or `php run <command> --help`
 - Built-in `commands` command for shell autocomplete
-- Support for `--key=value` and `--key value` option syntax
-- Output helpers: `info()`, `success()`, `warn()`, `error()`, `echoln()`
+- `--key=value` options (repeatable) and boolean `--flag` / `-h` flags
+- Output helpers: `info()`, `success()`, `warn()`, `error()`, `echoln()` (warnings and errors go to STDERR)
 - Text indentation and wrapping with `indent()`
 - Debug mode for detailed error traces
 - 100% test coverage
@@ -33,23 +34,33 @@ composer require celemas/cli
 Create a command by extending `Celemas\Cli\Command`:
 
 ```php
-use Celemas\Cli\Command;
+use Celemas\Cli\{Args, Command};
 
 class MyCommand extends Command {
     protected string $name = 'mycommand';
     protected string $group = 'MyGroup';
     protected string $description = 'This is my command';
 
-    public function run(): int
+    public function run(Args $args): int
     {
-        $this->info("Running my command");
+        $name = $args->positional(0, 'world');
+        $this->info("Running my command for {$name}");
         $this->success("Command completed!");
-        return 0;
+
+        return self::SUCCESS;
     }
 }
 ```
 
-Create a runner script:
+Options use `--key=value` (a bare `--flag` is a boolean); every other argument is a positional. Read them from the injected `Args`:
+
+```php
+$name = $args->positional(0);        // first positional, or null
+$conn = $args->opt('--conn', 'sqlite'); // option value, or the default
+$force = $args->has('--force');      // boolean flag
+```
+
+Create a runner script and pass its exit code to `exit()`:
 
 ```php
 <?php
@@ -59,14 +70,15 @@ use Celemas\Cli\{Runner, Commands};
 
 $commands = new Commands([new MyCommand()]);
 $runner = new Runner($commands);
-$runner->run();
+
+exit($runner->run());
 ```
 
 Run your command:
 
 ```bash
-$ php run mycommand
-Running my command
+$ php run mycommand alice
+Running my command for alice
 Command completed!
 ```
 

@@ -2,7 +2,28 @@
 
 ## [Unreleased](https://codeberg.org/celemas/cli/compare/0.2.0...HEAD)
 
-No notable changes since the last release.
+### Breaking Changes
+
+- Commands now receive parsed arguments and must return an exit code: `run(Args $args): int`. `string` returns are gone; use the new `Command::SUCCESS` / `Command::FAILURE` constants and call `exit($runner->run())`.
+- Replaced the `Opts`/`Opt` classes with a single injected `Args` object. Options use `--key=value` (repeatable); a bare `--flag` or `-h` is a boolean flag; every other token is a positional. The previous `--key value` space syntax is no longer supported.
+- `Runner::run()` now returns `int` instead of `int|string`, and its constructor takes an `errorOutput` target before the `debug` flag.
+- Made `Runner::orderCommands()` private.
+
+### Added
+
+- First-class positional arguments via `Args::positional()` and `Args::positionals()`.
+- Show a command's help with `php run <command> --help` or `-h`, alongside the existing `php run help <command>`.
+
+### Changed
+
+- `warn()`, `error()`, the ambiguous-command notice, and error/traceback output now write to STDERR.
+- Render the built-in `commands` and `help` under a single "General" help heading and align help columns by visible width.
+- `Output` resolves the terminal width once (preferring `COLUMNS`) instead of running `tput cols` on every `indent()` call.
+
+### Fixed
+
+- A flag before the command name no longer swallows it; `Args` reads only the command's own arguments.
+- Bound the command-name split so `foo:bar:baz` no longer mis-resolves, and bounds-checked `Args`/option value access.
 
 ## [0.2.0](https://codeberg.org/celemas/cli/src/tag/0.2.0) (2026-05-10)
 
