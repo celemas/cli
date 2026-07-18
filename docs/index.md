@@ -2,12 +2,12 @@
 title: Introduction
 ---
 
-Celemas Cli is a command line interface helper like [Laravel's Artisan](https://laravel.com/docs/9.x/artisan) with way less magic.
+Celemas Console is a command line interface helper like [Laravel's Artisan](https://laravel.com/docs/9.x/artisan) with way less magic.
 
 ## Installation
 
 ```bash
-composer require celemas/cli
+composer require celemas/console
 ```
 
 ## Quick Start
@@ -15,7 +15,7 @@ composer require celemas/cli
 Create a Command:
 
 ```php
-use Celemas\Cli\{Args, Command};
+use Celemas\Console\{Args, Command};
 
 class MyCommand extends Command {
     /**
@@ -147,7 +147,7 @@ Create a runner script, e. g. `run.php` or simply `run`:
 
 require __DIR__ . '/vendor/autoload.php';
 
-use Celemas\Cli\{Runner, Commands};
+use Celemas\Console\{Runner, Commands};
 use MyCommand;
 
 $commands = new Commands([new MyCommand()]);

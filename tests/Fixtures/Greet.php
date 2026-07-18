@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Celemas\Cli\Tests\Fixtures;
+namespace Celemas\Console\Tests\Fixtures;
 
-use Celemas\Cli\Args;
-use Celemas\Cli\Command;
+use Celemas\Console\Args;
+use Celemas\Console\Command;
 
 class Greet extends Command
 {

@@ -1,6 +1,6 @@
 {
-	"name": "celemas/cli",
-	"description": "Celemas cli tools runner",
+	"name": "celemas/console",
+	"description": "Celemas console command runner",
 	"type": "library",
 	"license": "MIT",
 	"authors": [
@@ -9,19 +9,19 @@
 			"email": "ernst@celemas.dev"
 		}
 	],
-	"homepage": "https://celemas.dev/cli",
+	"homepage": "https://celemas.dev/console",
 	"keywords": [
 		"celemas",
-		"cli"
+		"console"
 	],
 	"autoload": {
 		"psr-4": {
-			"Celemas\\Cli\\": "src/"
+			"Celemas\\Console\\": "src/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Celemas\\Cli\\Tests\\": "tests"
+			"Celemas\\Console\\Tests\\": "tests"
 		}
 	},
 	"require": {

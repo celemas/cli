@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Celemas\Cli\Tests;
+namespace Celemas\Console\Tests;
 
-use Celemas\Cli\Commands;
-use Celemas\Cli\Runner;
+use Celemas\Console\Commands;
+use Celemas\Console\Runner;
 
 class RunnerTest extends TestCase
 {

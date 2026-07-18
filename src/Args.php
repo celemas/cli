@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Celemas\Cli;
+namespace Celemas\Console;
 
 /**
  * Parses a command's argument tokens into options and positionals.

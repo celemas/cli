@@ -4,6 +4,7 @@
 
 ### Breaking Changes
 
+- Renamed the package from `celemas/cli` to `celemas/console` and the root namespace from `Celemas\Cli` to `Celemas\Console`. Update your `composer require` and every `use Celemas\Cli\...` import.
 - Commands now receive parsed arguments and must return an exit code: `run(Args $args): int`. `string` returns are gone; use the new `Command::SUCCESS` / `Command::FAILURE` constants and call `exit($runner->run())`.
 - Replaced the `Opts`/`Opt` classes with a single injected `Args` object. Options use `--key=value` (repeatable); a bare `--flag` or `-h` is a boolean flag; every other token is a positional. The previous `--key value` space syntax is no longer supported.
 - `Runner::run()` now returns `int` instead of `int|string`, and its constructor takes an `errorOutput` target before the `debug` flag.

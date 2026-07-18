@@ -1,4 +1,4 @@
-# Celemas Cli
+# Celemas Console
 
 <!-- prettier-ignore-start -->
 [![ci](https://codeberg.org/celemas/cli/badges/workflows/ci.yml/badge.svg?style=flat&logo=codeberg&logoColor=white&label=ci)](https://codeberg.org/celemas/cli/actions)
@@ -26,15 +26,15 @@ A command line interface helper.
 ## Installation
 
 ```bash
-composer require celemas/cli
+composer require celemas/console
 ```
 
 ## Quick Start
 
-Create a command by extending `Celemas\Cli\Command`:
+Create a command by extending `Celemas\Console\Command`:
 
 ```php
-use Celemas\Cli\{Args, Command};
+use Celemas\Console\{Args, Command};
 
 class MyCommand extends Command {
     protected string $name = 'mycommand';
@@ -66,7 +66,7 @@ Create a runner script and pass its exit code to `exit()`:
 <?php
 require __DIR__ . '/vendor/autoload.php';
 
-use Celemas\Cli\{Runner, Commands};
+use Celemas\Console\{Runner, Commands};
 
 $commands = new Commands([new MyCommand()]);
 $runner = new Runner($commands);

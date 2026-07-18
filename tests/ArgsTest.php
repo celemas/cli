@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Celemas\Cli\Tests;
+namespace Celemas\Console\Tests;
 
-use Celemas\Cli\Args;
+use Celemas\Console\Args;
 
 class ArgsTest extends TestCase
 {
