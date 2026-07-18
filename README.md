@@ -15,7 +15,7 @@ A command line interface helper.
 - Simple command creation with automatic help generation
 - Parsed options and positional arguments via an injected `Args` object
 - Built-in color support for terminal output
-- Command help with `php run help <command>` or `php run <command> --help`
+- Command help with `php run help <command>`
 - Built-in `commands` command for shell autocomplete
 - `--key=value` options (repeatable) and boolean `--flag` / `-h` flags
 - Output helpers: `info()`, `success()`, `warn()`, `error()`, `echoln()` (warnings and errors go to STDERR)

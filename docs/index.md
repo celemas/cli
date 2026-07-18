@@ -127,7 +127,8 @@ A positional cannot start with `-` — such a token is read as a flag.
 - `help` - Display help for all commands or a specific command
 - `commands` - List all command names (useful for shell autocomplete)
 
-You can also show a command's help with `php run <command> --help` or `-h`.
+The runner reserves no flags, so `--help`/`-h` (and every other flag) belong
+to your command; use `php run help <command>` for a command's help screen.
 
 ### Debug Mode
 

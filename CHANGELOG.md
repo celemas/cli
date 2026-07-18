@@ -12,7 +12,6 @@
 ### Added
 
 - First-class positional arguments via `Args::positional()` and `Args::positionals()`.
-- Show a command's help with `php run <command> --help` or `-h`, alongside the existing `php run help <command>`.
 
 ### Changed
 

@@ -166,10 +166,6 @@ final class Runner
 
 			$args = new Args(array_slice($argv, offset: 2));
 
-			if ($args->has('--help') || $args->has('-h')) {
-				$isHelpCall = true;
-			}
-
 			try {
 				return $this->runCommand($this->getCommand($cmd), $isHelpCall, $args);
 			} catch (ValueError $e) {

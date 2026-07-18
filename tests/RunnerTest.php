@@ -166,24 +166,6 @@ class RunnerTest extends TestCase
 		$runner->run();
 	}
 
-	public function testCommandHelpViaLongFlag(): void
-	{
-		$_SERVER['argv'] = ['run', 'foo:stuff', '--help'];
-		$runner = $this->getRunner();
-
-		$this->expectOutputRegex('/php run foo:stuff.*Options:/s');
-		$runner->run();
-	}
-
-	public function testCommandHelpViaShortFlag(): void
-	{
-		$_SERVER['argv'] = ['run', 'bar:stuff', '-h'];
-		$runner = $this->getRunner();
-
-		$this->expectOutputRegex('/php run bar:stuff/');
-		$runner->run();
-	}
-
 	public function testRunReturnsSuccessCode(): void
 	{
 		$_SERVER['argv'] = ['run', 'drivel'];
@@ -246,6 +228,17 @@ class RunnerTest extends TestCase
 		$_SERVER['argv'] = ['run', 'greet'];
 		$runner = new Runner(new Commands([new Fixtures\Greet()]));
 
+		$this->expectOutputString('Hello, World');
+		$runner->run();
+	}
+
+	public function testHelpFlagsAreNotReserved(): void
+	{
+		$_SERVER['argv'] = ['run', 'greet', '--help'];
+		$runner = new Runner(new Commands([new Fixtures\Greet()]));
+
+		// The runner no longer intercepts --help/-h; the command runs and
+		// may read those flags itself. Help stays on `run help <command>`.
 		$this->expectOutputString('Hello, World');
 		$runner->run();
 	}
