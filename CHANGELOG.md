@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased](https://codeberg.org/celema/console/compare/0.2.0...HEAD)
+## [Unreleased](https://codeberg.org/celema/console/compare/0.3.0...HEAD)
+
+No notable changes since the last release.
+
+## [0.3.0](https://codeberg.org/celema/console/src/tag/0.3.0) (2026-07-18)
 
 ### Breaking Changes
 
@@ -27,13 +31,13 @@
 - A flag before the command name no longer swallows it; `Args` reads only the command's own arguments.
 - Bound the command-name split so `foo:bar:baz` no longer mis-resolves, and bounds-checked `Args`/option value access.
 
-## [0.2.0](https://codeberg.org/celemas/cli/src/tag/0.2.0) (2026-05-10)
+## [0.2.0](https://codeberg.org/celema/console/src/tag/0.2.0) (2026-05-10)
 
 ### Breaking Changes
 
 - Rename package metadata, root namespace, repository URLs, homepage, and contact email to Celemas.
 
-## [0.1.2](https://codeberg.org/celemas/cli/src/tag/0.1.2) (2026-04-29)
+## [0.1.2](https://codeberg.org/celema/console/src/tag/0.1.2) (2026-04-29)
 
 ### Breaking
 
@@ -52,7 +56,7 @@
 - Fixed package homepage metadata to point to `duon.sh/cli`.
 - Fixed command metadata handling so `0` prefixes, groups, and descriptions are not treated as missing.
 
-## [0.1.1](https://codeberg.org/celemas/cli/src/tag/0.1.1) (2026-01-29)
+## [0.1.1](https://codeberg.org/celema/console/src/tag/0.1.1) (2026-01-29)
 
 ### Changed
 
@@ -60,7 +64,7 @@
 - Breaking: Removed the `composer github` script; CI now runs the equivalent commands directly.
 - Switched development tool dependencies to `duon/dev` and relaxed Composer stability (`minimum-stability: dev` with `prefer-stable`) to allow installing newer Psalm builds.
 
-## [0.1.0](https://codeberg.org/celemas/cli/src/tag/0.1.0) (2026-01-28)
+## [0.1.0](https://codeberg.org/celema/console/src/tag/0.1.0) (2026-01-28)
 
 Initial version.
 
