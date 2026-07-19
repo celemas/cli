@@ -7,7 +7,7 @@ namespace Celema\Console;
 /**
  * @api
  */
-final class Output
+class Output
 {
 	private mixed $stream = null;
 	private mixed $errorStream = null;
@@ -182,17 +182,17 @@ final class Output
 		return $text;
 	}
 
-	private function stdout(): mixed
+	protected function stdout(): mixed
 	{
 		return $this->stream ??= fopen($this->target, mode: 'w');
 	}
 
-	private function stderr(): mixed
+	protected function stderr(): mixed
 	{
 		return $this->errorStream ??= fopen($this->errorTarget, mode: 'w');
 	}
 
-	private function hasColorSupport(): bool
+	protected function hasColorSupport(): bool
 	{
 		if (getenv('NO_COLOR') !== false) {
 			return false;

@@ -30,13 +30,17 @@ final class Runner
 	private Output $output;
 	private int $longestName = 0;
 
+	/**
+	 * An Output instance given as `$output` is used as is; `$errorOutput`
+	 * then has no effect.
+	 */
 	public function __construct(
 		Commands $commands,
-		string $output = 'php://output',
+		string|Output $output = 'php://output',
 		string $errorOutput = 'php://stderr',
 		private bool $debug = false,
 	) {
-		$this->output = new Output($output, $errorOutput);
+		$this->output = is_string($output) ? new Output($output, $errorOutput) : $output;
 		$this->orderCommands($commands);
 	}
 
