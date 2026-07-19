@@ -6,16 +6,15 @@ namespace Celema\Console\Tests\Fixtures;
 
 use Celema\Console\Args;
 use Celema\Console\Command;
+use Celema\Console\Output;
 
-class Plain extends Command
+#[Command('plain', 'An ungrouped command')]
+class Plain
 {
-	protected string $name = 'plain';
-	protected string $description = 'An ungrouped command';
-
-	public function run(Args $args): int
+	public function __invoke(Args $args, Output $output): int
 	{
-		$this->echo('Plain');
+		$output->echo('Plain');
 
-		return self::SUCCESS;
+		return 0;
 	}
 }

@@ -6,16 +6,13 @@ namespace Celema\Console\Tests\Fixtures;
 
 use Celema\Console\Args;
 use Celema\Console\Command;
+use Celema\Console\Output;
 use Exception;
 
-class Erring extends Command
+#[Command('err:err', 'Throws an error', group: 'Errors')]
+class Erring
 {
-	protected string $name = 'err';
-	protected string $group = 'Errors';
-	protected string $prefix = 'err';
-	protected string $description = 'Throws an error';
-
-	public function run(Args $args): int
+	public function __invoke(Args $args, Output $output): int
 	{
 		throw new Exception('Red herring');
 	}

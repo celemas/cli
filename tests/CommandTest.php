@@ -4,118 +4,106 @@ declare(strict_types=1);
 
 namespace Celema\Console\Tests;
 
-use Celema\Console\Output;
+use Celema\Console\Command;
+use Celema\Console\Opt;
 use Celema\Console\Tests\Fixtures\Erring;
 use Celema\Console\Tests\Fixtures\FooStuff;
-use RuntimeException;
+use Celema\Console\Tests\Fixtures\Plain;
+use stdClass;
+use ValueError;
 
 class CommandTest extends TestCase
 {
-	public function testCommandGetters(): void
+	public function testMetadataParsing(): void
 	{
-		$_SERVER['argv'] = ['run'];
-		$foo = new FooStuff();
+		$meta = new Command('DB:Add-Migration', 'Initialize a new migration', group: 'Database');
 
-		$this->assertSame('stuff', $foo->name());
-		$this->assertSame("Prints Foo's stuff to stdout", $foo->description());
-		$this->assertSame('run', $foo->script());
-
-		// Implicit prefix
-		$this->assertSame('Foo', $foo->group());
-		$this->assertSame('foo', $foo->prefix());
-
-		// Explicit prefix
-		$err = new Erring();
-		$this->assertSame('Errors', $err->group());
-		$this->assertSame('err', $err->prefix());
+		$this->assertSame('add-migration', $meta->name);
+		$this->assertSame('db', $meta->prefix);
+		$this->assertSame('db:add-migration', $meta->full());
+		$this->assertSame('Database', $meta->title());
+		$this->assertSame('Initialize a new migration', $meta->description);
 	}
 
-	public function testEchoFails(): void
+	public function testTitleDerivedFromPrefix(): void
 	{
-		$foo = new FooStuff();
+		$meta = new Command('foo:stuff');
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Output missing');
-		$foo->echo('error');
+		$this->assertSame('Foo', $meta->title());
 	}
 
-	public function testEchoLineFails(): void
+	public function testUngroupedCommand(): void
 	{
-		$foo = new FooStuff();
+		$meta = new Command('plain');
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Output missing');
-		$foo->echoln('error');
+		$this->assertSame('plain', $meta->name);
+		$this->assertSame('', $meta->prefix);
+		$this->assertSame('plain', $meta->full());
+		$this->assertSame('General', $meta->title());
 	}
 
-	public function testColorFails(): void
+	public function testEmptyNameFails(): void
 	{
-		$foo = new FooStuff();
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage('Invalid command name');
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Output missing');
-		$foo->color('error', '#ffffff');
+		new Command('');
 	}
 
-	public function testIndentFails(): void
+	public function testEmptyPrefixFails(): void
 	{
-		$foo = new FooStuff();
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage('Invalid command name');
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Output missing');
-		$foo->indent('error', 1);
+		new Command(':stuff');
 	}
 
-	public function testInfoMethod(): void
+	public function testEmptyNameWithPrefixFails(): void
 	{
-		$foo = new FooStuff();
-		$output = new Output('php://output');
-		$foo->output($output);
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage('Invalid command name');
 
-		ob_start();
-		$foo->info('Information message');
-		$result = ob_get_clean();
-
-		$this->assertSame("Information message\n", $result);
+		new Command('foo:');
 	}
 
-	public function testSuccessMethod(): void
+	public function testReadAttributeFromInstance(): void
 	{
-		$foo = new FooStuff();
-		$output = new Output('php://output');
-		$foo->output($output);
+		$meta = Command::of(new Erring());
 
-		ob_start();
-		$foo->success('Success message');
-		$result = ob_get_clean();
-
-		$this->assertStringContainsString('Success message', $result);
+		$this->assertSame('err', $meta->name);
+		$this->assertSame('err', $meta->prefix);
+		$this->assertSame('Errors', $meta->title());
 	}
 
-	public function testWarnMethod(): void
+	public function testReadAttributeFromClass(): void
 	{
-		$foo = new FooStuff();
-		// warn() writes to STDERR; capture it by pointing the error stream here.
-		$output = new Output('php://output', 'php://output');
-		$foo->output($output);
+		$meta = Command::of(FooStuff::class);
 
-		ob_start();
-		$foo->warn('Warning message');
-		$result = ob_get_clean();
-
-		$this->assertStringContainsString('Warning message', $result);
+		$this->assertSame('stuff', $meta->name);
+		$this->assertSame('foo', $meta->prefix);
 	}
 
-	public function testErrorMethod(): void
+	public function testMissingAttributeFails(): void
 	{
-		$foo = new FooStuff();
-		$output = new Output('php://output', 'php://output');
-		$foo->output($output);
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage('has no #[Command] attribute');
 
-		ob_start();
-		$foo->error('Error message');
-		$result = ob_get_clean();
+		Command::of(stdClass::class);
+	}
 
-		$this->assertStringContainsString('Error message', $result);
+	public function testReadOptsFromClass(): void
+	{
+		$opts = Opt::of(FooStuff::class);
+
+		$this->assertCount(1, $opts);
+		$this->assertSame('--stuff', $opts[0]->long);
+		$this->assertSame('-s', $opts[0]->short);
+		$this->assertSame('stuff', $opts[0]->value);
+		$this->assertFalse($opts[0]->optionalValue);
+	}
+
+	public function testReadOptsFromInstance(): void
+	{
+		$this->assertSame([], Opt::of(new Plain()));
 	}
 }

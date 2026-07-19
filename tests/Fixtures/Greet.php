@@ -6,19 +6,17 @@ namespace Celema\Console\Tests\Fixtures;
 
 use Celema\Console\Args;
 use Celema\Console\Command;
+use Celema\Console\Output;
 
-class Greet extends Command
+#[Command('greet', 'Greets a name')]
+class Greet
 {
-	protected string $name = 'greet';
-	protected string $group = 'Foo';
-	protected string $description = 'Greets a name';
-
-	public function run(Args $args): int
+	public function __invoke(Args $args, Output $output): int
 	{
 		$name = $args->positional(0, 'World');
 		$greeting = $args->opt('--greeting', 'Hello');
-		$this->echo("{$greeting}, {$name}");
+		$output->echo("{$greeting}, {$name}");
 
-		return self::SUCCESS;
+		return 0;
 	}
 }

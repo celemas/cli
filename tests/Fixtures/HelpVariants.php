@@ -6,31 +6,19 @@ namespace Celema\Console\Tests\Fixtures;
 
 use Celema\Console\Args;
 use Celema\Console\Command;
+use Celema\Console\Opt;
+use Celema\Console\Output;
 
-class HelpVariants extends Command
+#[Command('help:variants', 'Exercises help option rendering')]
+#[Opt('--verbose', 'Enable verbose output', short: '-v')]
+#[Opt('--prune', 'Drop obsolete entries')]
+#[Opt('--host', 'Host to bind to', short: '-h', value: 'host')]
+#[Opt('--release', 'Install a specific tag', value: 'tag')]
+#[Opt('--watch', 'Optionally watch files', short: '-w', value: 'file', optionalValue: true)]
+class HelpVariants
 {
-	protected string $name = 'variants';
-	protected string $group = 'Help';
-	protected string $description = 'Exercises help option rendering';
-
-	public function run(Args $args): int
+	public function __invoke(Args $args, Output $output): int
 	{
-		return self::SUCCESS;
-	}
-
-	public function help(): void
-	{
-		$this->helpHeader(withOptions: true);
-		$this->helpOption('--verbose', 'Enable verbose output', short: '-v');
-		$this->helpOption('--prune', 'Drop obsolete entries');
-		$this->helpOption('--host', 'Host to bind to', short: '-h', value: 'host');
-		$this->helpOption('--release', 'Install a specific tag', value: 'tag');
-		$this->helpOption(
-			'--watch',
-			'Optionally watch files',
-			short: '-w',
-			value: 'file',
-			optionalValue: true,
-		);
+		return 0;
 	}
 }

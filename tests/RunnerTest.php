@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Celema\Console\Tests;
 
+use Celema\Console\Args;
 use Celema\Console\Commands;
+use Celema\Console\Output;
 use Celema\Console\Runner;
 
 class RunnerTest extends TestCase
@@ -241,6 +243,91 @@ class RunnerTest extends TestCase
 		// may read those flags itself. Help stays on `run help <command>`.
 		$this->expectOutputString('Hello, World');
 		$runner->run();
+	}
+
+	public function testRunClassStringCommand(): void
+	{
+		$_SERVER['argv'] = ['run', 'plain'];
+		$runner = new Runner(new Commands(Fixtures\Plain::class));
+
+		$this->expectOutputString('Plain');
+		$runner->run();
+	}
+
+	public function testRunNamedClosureCommand(): void
+	{
+		$_SERVER['argv'] = ['run', 'cache:clear', 'now'];
+		$commands = new Commands();
+		$commands->add(
+			'cache:clear',
+			'Clears the cache',
+			static function (Args $args, Output $out): void {
+				$out->echo('cleared ' . (string) $args->positional(0));
+			},
+		);
+		$runner = new Runner($commands);
+
+		ob_start();
+		$code = $runner->run();
+		$stdout = (string) ob_get_clean();
+
+		// A closure without return value maps to exit code 0.
+		$this->assertSame(0, $code);
+		$this->assertSame('cleared now', $stdout);
+	}
+
+	public function testClosureCommandAppearsInHelp(): void
+	{
+		$_SERVER['argv'] = ['run'];
+		$commands = new Commands();
+		$commands->add('cache:clear', 'Clears the cache', static fn(Args $args, Output $out): int => 0);
+		$runner = new Runner($commands);
+
+		$this->expectOutputRegex('/Cache.*cache:.*clear.*Clears the cache/s');
+		$runner->run();
+	}
+
+	public function testFactoryRunsOnlyForTheInvokedCommand(): void
+	{
+		$_SERVER['argv'] = ['run', 'help'];
+		$called = false;
+		$factory = static function () use (&$called): Fixtures\Greet {
+			$called = true;
+
+			return new Fixtures\Greet();
+		};
+		$commands = new Commands([Fixtures\Greet::class => $factory]);
+
+		ob_start();
+		new Runner($commands)->run();
+		ob_get_clean();
+
+		$this->assertFalse($called);
+
+		$_SERVER['argv'] = ['run', 'greet'];
+
+		ob_start();
+		new Runner($commands)->run();
+		ob_get_clean();
+
+		$this->assertTrue($called);
+	}
+
+	public function testUninvokableCommandFails(): void
+	{
+		$_SERVER['argv'] = ['run', 'broken'];
+		$runner = new Runner(
+			new Commands(Fixtures\Uninvokable::class),
+			output: 'php://output',
+			errorOutput: 'php://output',
+		);
+
+		ob_start();
+		$code = $runner->run();
+		$stdout = (string) ob_get_clean();
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString("Command 'broken' is not callable", $stdout);
 	}
 
 	public function testHelpOptionRendersEqualsNotation(): void

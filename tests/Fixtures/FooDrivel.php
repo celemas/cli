@@ -6,17 +6,15 @@ namespace Celema\Console\Tests\Fixtures;
 
 use Celema\Console\Args;
 use Celema\Console\Command;
+use Celema\Console\Output;
 
-class FooDrivel extends Command
+#[Command('foo:drivel', "Prints Foo's drivel to stdout")]
+class FooDrivel
 {
-	protected string $name = 'drivel';
-	protected string $group = 'Foo';
-	protected string $description = "Prints Foo's drivel to stdout";
-
-	public function run(Args $args): int
+	public function __invoke(Args $args, Output $output): int
 	{
-		$this->echo("Foo's drivel");
+		$output->echo("Foo's drivel");
 
-		return self::SUCCESS;
+		return 0;
 	}
 }

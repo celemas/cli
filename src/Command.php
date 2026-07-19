@@ -4,157 +4,81 @@ declare(strict_types=1);
 
 namespace Celema\Console;
 
-use RuntimeException;
+use Attribute;
+use ReflectionClass;
+use ValueError;
 
 /**
+ * Declares a class as a console command.
+ *
+ * The name may carry a group prefix separated by a colon, e.g. `db:migrate`.
+ * The prefix namespaces the command on the command line and groups it in the
+ * help overview under the capitalized prefix; `group` overrides that
+ * displayed title.
+ *
  * @api
  */
-abstract class Command
+#[Attribute(Attribute::TARGET_CLASS)]
+final class Command
 {
-	public const int SUCCESS = 0;
-	public const int FAILURE = 1;
+	public readonly string $name;
+	public readonly string $prefix;
 
-	protected string $name = '';
-	protected string $group = '';
-	protected string $prefix = '';
-	protected string $description = '';
-	protected ?Output $output = null;
+	public function __construct(
+		string $name,
+		public readonly string $description = '',
+		public readonly string $group = '',
+	) {
+		$lower = strtolower($name);
+		$prefix = '';
+		$bare = $lower;
 
-	abstract public function run(Args $args): int;
+		if (str_contains($lower, ':')) {
+			/** @var array{0: string, 1: string} $parts */
+			$parts = explode(':', $lower, limit: 2);
+			[$prefix, $bare] = $parts;
 
-	public function name(): string
-	{
-		return $this->name;
-	}
-
-	public function group(): string
-	{
-		return $this->group;
-	}
-
-	public function prefix(): string
-	{
-		return $this->prefix === '' ? strtolower($this->group) : $this->prefix;
-	}
-
-	public function description(): string
-	{
-		return $this->description;
-	}
-
-	public function script(): string
-	{
-		return $_SERVER['argv'][0] ?? '';
-	}
-
-	public function output(Output $output): static
-	{
-		$this->output = $output;
-
-		return $this;
-	}
-
-	public function echo(string $message, string $color = '', string $background = ''): void
-	{
-		$this->out()->echo($message, $color, $background);
-	}
-
-	public function echoln(string $message, string $color = '', string $background = ''): void
-	{
-		$this->out()->echoln($message, $color, $background);
-	}
-
-	public function info(string $message): void
-	{
-		$this->echoln($message);
-	}
-
-	public function success(string $message): void
-	{
-		$this->echoln($message, 'green');
-	}
-
-	public function warn(string $message): void
-	{
-		$this->out()->echolnErr($message, 'yellow');
-	}
-
-	public function error(string $message): void
-	{
-		$this->out()->echolnErr($message, 'red');
-	}
-
-	public function color(string $text, string $color, string $background = ''): string
-	{
-		return $this->out()->color($text, $color, $background);
-	}
-
-	public function indent(
-		string $text,
-		int $indent,
-		?int $max = null,
-	): string {
-		return $this->out()->indent($text, $indent, $max);
-	}
-
-	private function out(): Output
-	{
-		return $this->output ?? throw new RuntimeException('Output missing');
-	}
-
-	public function help(): void
-	{
-		$this->helpHeader(withOptions: false);
-	}
-
-	protected function helpHeader(bool $withOptions = false): void
-	{
-		$script = $this->script();
-		$name = $this->name;
-		$prefix = $this->prefix();
-		$desc = $this->description;
-
-		if ($desc !== '') {
-			$label = $this->color('Description:', 'brown') . "\n";
-			$this->echo("{$label}  {$desc}\n\n");
+			if ($prefix === '') {
+				throw new ValueError("Invalid command name '{$name}'");
+			}
 		}
 
-		$usage = $this->color('Usage:', 'brown') . "\n  php {$script} {$prefix}:{$name}";
-
-		if ($withOptions) {
-			$this->echo("{$usage} [options]\n\n");
-			$this->echoln($this->color('Options:', 'brown'));
-
-			return;
+		if ($bare === '') {
+			throw new ValueError("Invalid command name '{$name}'");
 		}
 
-		$this->echo("{$usage}\n");
+		$this->prefix = $prefix;
+		$this->name = $bare;
+	}
+
+	public function full(): string
+	{
+		return $this->prefix === '' ? $this->name : "{$this->prefix}:{$this->name}";
+	}
+
+	public function title(): string
+	{
+		if ($this->group !== '') {
+			return $this->group;
+		}
+
+		return $this->prefix === '' ? 'General' : ucfirst($this->prefix);
 	}
 
 	/**
-	 * Render one option in the help "Options:" block.
+	 * Reads the attribute off a command instance or class.
 	 *
-	 * Pass the flag names and, for value-taking options, a `value` label; the
-	 * `--opt=<value>` notation is rendered here so it cannot drift from the
-	 * `=`-only parser. Omit `value` for a boolean flag; set `optionalValue`
-	 * for a flag whose value is optional (`--opt[=<value>]`).
+	 * @param class-string|object $command
 	 */
-	protected function helpOption(
-		string $long,
-		string $description,
-		string $short = '',
-		string $value = '',
-		bool $optionalValue = false,
-	): void {
-		$suffix = match (true) {
-			$value === '' => '',
-			$optionalValue => "[=<{$value}>]",
-			default => "=<{$value}>",
-		};
+	public static function of(object|string $command): self
+	{
+		$class = is_object($command) ? $command::class : $command;
+		$attributes = new ReflectionClass($class)->getAttributes(self::class);
 
-		$option = $short === '' ? $long . $suffix : "{$short}{$suffix}, {$long}{$suffix}";
+		if ($attributes === []) {
+			throw new ValueError("Command class '{$class}' has no #[Command] attribute");
+		}
 
-		$this->echo('    ' . $this->color($option, 'green') . "\n");
-		$this->echo($this->indent($description, 8, 80) . "\n");
+		return $attributes[0]->newInstance();
 	}
 }

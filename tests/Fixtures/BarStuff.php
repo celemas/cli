@@ -6,17 +6,15 @@ namespace Celema\Console\Tests\Fixtures;
 
 use Celema\Console\Args;
 use Celema\Console\Command;
+use Celema\Console\Output;
 
-class BarStuff extends Command
+#[Command('bar:stuff', "Prints Bar's stuff to stdout")]
+class BarStuff
 {
-	protected string $name = 'stuff';
-	protected string $group = 'Bar';
-	protected string $description = "Prints Bar's stuff to stdout";
-
-	public function run(Args $args): int
+	public function __invoke(Args $args, Output $output): int
 	{
-		$this->echo("Bar's stuff");
+		$output->echo("Bar's stuff");
 
-		return self::SUCCESS;
+		return 0;
 	}
 }

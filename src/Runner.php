@@ -14,10 +14,18 @@ final class Runner
 {
 	private const AMBIGUOUS = 1;
 
-	// The commands ordered by group and name
+	/**
+	 * The commands ordered by group and name.
+	 *
+	 * @var array<string, array{title: string, commands: array<string, Entry>}>
+	 */
 	private array $toc = [];
 
-	// The commands indexed by name only
+	/**
+	 * The commands indexed by name only.
+	 *
+	 * @var array<string, list<Entry>>
+	 */
 	private array $list = [];
 	private Output $output;
 	private int $longestName = 0;
@@ -36,24 +44,21 @@ final class Runner
 	{
 		$groups = [];
 
-		foreach ($commands->get() as $command) {
-			$name = strtolower($command->name());
-			$prefix = $command->prefix();
+		foreach ($commands->entries() as $entry) {
+			$meta = $entry->meta;
 
-			if (!array_key_exists($prefix, $groups)) {
-				$group = $command->group();
-				$group = $group === '' ? 'General' : $group;
-				$groups[$prefix] = [
-					'title' => $prefix === '' ? 'General' : $group,
+			if (!array_key_exists($meta->prefix, $groups)) {
+				$groups[$meta->prefix] = [
+					'title' => $meta->title(),
 					'commands' => [],
 				];
 			}
 
-			$groups[$prefix]['commands'][$name] = $command;
+			$groups[$meta->prefix]['commands'][$meta->name] = $entry;
 
-			$this->list[$name][] = $command;
+			$this->list[$meta->name][] = $entry;
 
-			$len = strlen($prefix . ':' . $command->name());
+			$len = strlen($meta->full());
 			$this->longestName = $len > $this->longestName ? $len : $this->longestName;
 		}
 
@@ -80,8 +85,8 @@ final class Runner
 		$this->echoCommand('', 'commands', 'Lists all available commands');
 		$this->echoCommand('', 'help', 'Displays this overview');
 
-		foreach ($this->toc['']['commands'] ?? [] as $name => $command) {
-			$this->echoCommand($command->prefix(), $name, $command->description());
+		foreach ($this->toc['']['commands'] ?? [] as $name => $entry) {
+			$this->echoCommand('', $name, $entry->meta->description);
 		}
 
 		foreach ($this->toc as $prefix => $group) {
@@ -91,8 +96,8 @@ final class Runner
 
 			$this->echoGroup($group['title']);
 
-			foreach ($group['commands'] as $name => $command) {
-				$this->echoCommand($command->prefix(), $name, $command->description());
+			foreach ($group['commands'] as $name => $entry) {
+				$this->echoCommand($prefix, $name, $entry->meta->description);
 			}
 		}
 
@@ -111,16 +116,15 @@ final class Runner
 		$list = [];
 
 		foreach ($this->toc as $group) {
-			foreach ($group['commands'] as $command) {
-				$prefix = $command->prefix();
+			foreach ($group['commands'] as $entry) {
+				$meta = $entry->meta;
 
-				if ($prefix) {
-					$key = "{$prefix}:" . $command->name();
+				if ($meta->prefix !== '') {
+					$key = $meta->full();
 					$list[$key] = ($list[$key] ?? 0) + 1;
 				}
 
-				$name = $command->name();
-				$list[$name] = ($list[$name] ?? 0) + 1;
+				$list[$meta->name] = ($list[$meta->name] ?? 0) + 1;
 			}
 		}
 
@@ -166,15 +170,13 @@ final class Runner
 			$args = new Args(array_slice($argv, offset: 2));
 
 			try {
-				$command = $this->getCommand($cmd)->output($this->output);
+				$entry = $this->getCommand($cmd);
 
 				if ($isHelpCall) {
-					$command->help();
-
-					return 0;
+					return $this->showCommandHelp($entry);
 				}
 
-				return $command->run($args);
+				return $this->runCommand($entry, $args);
 			} catch (ValueError $e) {
 				if ($e->getCode() === self::AMBIGUOUS) {
 					return $this->showAmbiguousMessage($cmd);
@@ -194,6 +196,59 @@ final class Runner
 
 			return 1;
 		}
+	}
+
+	private function runCommand(Entry $entry, Args $args): int
+	{
+		$command = $entry->command();
+
+		if (!is_callable($command)) {
+			throw new ValueError("Command '{$entry->meta->full()}' is not callable");
+		}
+
+		$result = $command($args, $this->output);
+
+		return is_int($result) ? $result : 0;
+	}
+
+	private function showCommandHelp(Entry $entry): int
+	{
+		$meta = $entry->meta;
+		$opts = $entry->opts();
+		$script = $_SERVER['argv'][0] ?? '';
+
+		if ($meta->description !== '') {
+			$label = $this->output->color('Description:', 'brown') . "\n";
+			$this->output->echo("{$label}  {$meta->description}\n\n");
+		}
+
+		$usage = $this->output->color('Usage:', 'brown') . "\n  php {$script} {$meta->full()}";
+
+		if ($opts === []) {
+			$this->output->echo("{$usage}\n");
+
+			return 0;
+		}
+
+		$this->output->echo("{$usage} [options]\n\n");
+		$this->output->echoln($this->output->color('Options:', 'brown'));
+
+		foreach ($opts as $opt) {
+			$suffix = match (true) {
+				$opt->value === '' => '',
+				$opt->optionalValue => "[=<{$opt->value}>]",
+				default => "=<{$opt->value}>",
+			};
+
+			$option = $opt->short === ''
+				? $opt->long . $suffix
+				: "{$opt->short}{$suffix}, {$opt->long}{$suffix}";
+
+			$this->output->echo('    ' . $this->output->color($option, 'green') . "\n");
+			$this->output->echo($this->output->indent($opt->description, 8, 80) . "\n");
+		}
+
+		return 0;
 	}
 
 	private function echoGroup(string $title): void
@@ -217,18 +272,18 @@ final class Runner
 	private function showAmbiguousMessage(string $cmd): int
 	{
 		$this->output->echoErr("Ambiguous command. Please add the group name:\n\n");
-		asort($this->list[$cmd]);
+		$entries = $this->list[$cmd];
+		usort($entries, static fn(Entry $a, Entry $b): int => strcmp($a->meta->full(), $b->meta->full()));
 
-		foreach ($this->list[$cmd] as $command) {
-			$prefix = $this->output->color($command->prefix(), 'brown');
-			$name = strtolower($command->name());
-			$this->output->echolnErr("  {$prefix}:{$name}");
+		foreach ($entries as $entry) {
+			$prefix = $this->output->color($entry->meta->prefix, 'brown');
+			$this->output->echolnErr("  {$prefix}:{$entry->meta->name}");
 		}
 
 		return 1;
 	}
 
-	private function getCommand(string $cmd): Command
+	private function getCommand(string $cmd): Entry
 	{
 		if (array_key_exists($cmd, $this->list)) {
 			if (count($this->list[$cmd]) === 1) {
