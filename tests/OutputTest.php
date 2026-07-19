@@ -115,6 +115,46 @@ class OutputTest extends TestCase
 		$this->assertSame('    Lorem ipsum dolor sit amet', $first[0]);
 	}
 
+	public function testMessageHelpers(): void
+	{
+		putenv('FORCE_COLOR=1');
+		$output = new Output('php://output', 'php://output');
+
+		ob_start();
+		$output->info('information');
+		$output->success('succeeded');
+		$output->warn('warning');
+		$output->error('failed');
+		$result = (string) ob_get_clean();
+
+		$this->assertStringContainsString("information\n", $result);
+		$this->assertStringContainsString("\033[0;32msucceeded\033[0m\n", $result);
+		$this->assertStringContainsString("\033[1;33mwarning\033[0m\n", $result);
+		$this->assertStringContainsString("\033[0;31mfailed\033[0m\n", $result);
+		putenv('FORCE_COLOR');
+	}
+
+	public function testMessageHelperStreams(): void
+	{
+		putenv('NO_COLOR=1');
+		$err = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
+		$output = new Output('php://output', $err);
+
+		ob_start();
+		$output->info('information');
+		$output->success('succeeded');
+		$output->warn('warning');
+		$output->error('failed');
+		$stdout = (string) ob_get_clean();
+
+		$contents = (string) file_get_contents($err);
+		unlink($err);
+
+		$this->assertSame("information\nsucceeded\n", $stdout);
+		$this->assertSame("warning\nfailed\n", $contents);
+		putenv('NO_COLOR');
+	}
+
 	public function testErrorWritersTargetTheErrorStream(): void
 	{
 		$err = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');

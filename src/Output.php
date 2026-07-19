@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Celema\Console;
 
+/**
+ * @api
+ */
 final class Output
 {
 	private mixed $stream = null;
@@ -68,6 +71,26 @@ final class Output
 	public function echolnErr(string $text, string $color = '', string $background = ''): void
 	{
 		$this->write($this->stderr(), $this->styled($text, $color, $background) . PHP_EOL);
+	}
+
+	public function info(string $message): void
+	{
+		$this->echoln($message);
+	}
+
+	public function success(string $message): void
+	{
+		$this->echoln($message, 'green');
+	}
+
+	public function warn(string $message): void
+	{
+		$this->echolnErr($message, 'yellow');
+	}
+
+	public function error(string $message): void
+	{
+		$this->echolnErr($message, 'red');
 	}
 
 	private function styled(string $text, string $color, string $background): string
