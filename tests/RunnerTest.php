@@ -303,6 +303,25 @@ class RunnerTest extends TestCase
 		$this->assertSame(1, $code);
 	}
 
+	public function testRejectInvalidCommandReturnValue(): void
+	{
+		$_SERVER['argv'] = ['run', 'broken-return'];
+		$commands = new Commands();
+		$commands->add(
+			'broken-return',
+			'Returns the wrong type',
+			static fn(Args $args, Io $io): bool => false,
+		);
+		$out = new BufferedIo();
+		$code = new Runner($commands, $out)->run();
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'broken-return' must return an int or null, bool returned",
+			$out->errorOutput(),
+		);
+	}
+
 	public function testErrorsGoToStderrNotStdout(): void
 	{
 		$_SERVER['argv'] = ['run', 'unknown'];

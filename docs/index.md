@@ -80,7 +80,7 @@ $commands->add('cache:clear', 'Clears the cache', function (Args $args, Io $io):
 
 Class-based commands carry their metadata in the `#[Command]` attribute, which is read without instantiating the class. Factories run only when their command is actually invoked — listing the help never constructs a command.
 
-A command returning no value (such as a `void` closure) maps to exit code 0.
+A command returning no value (such as a `void` closure) maps to exit code 0. Every other command result must be an integer exit code.
 
 ### Io Methods
 
@@ -172,14 +172,9 @@ A positional cannot start with `-` — such a token is read as a flag.
 
 ### Option Validation
 
-For a command class that declares `#[Opt]` attributes, the runner validates
-the provided options before the command runs: an unknown option (with a
-"Did you mean" suggestion for near misses), a value on a boolean flag, or a
-value-taking option without `=value` aborts with exit code 1. So a typo like
-`--forec` fails loudly instead of being silently ignored.
+For a command class that declares `#[Opt]` attributes, the runner validates the provided options before the command runs: an unknown option (with a "Did you mean" suggestion for near misses), a value on a boolean flag, or a value-taking option without `=value` aborts with exit code 1. So a typo like `--forec` fails loudly instead of being silently ignored.
 
-Commands declaring no options — including closures — accept arbitrary
-options and read them from `Args` unchecked.
+Commands declaring no options — including closures — accept arbitrary options and read them from `Args` unchecked.
 
 ### Command Help
 

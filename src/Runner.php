@@ -213,7 +213,19 @@ final class Runner
 
 		$result = $command($args, $this->io);
 
-		return is_int($result) ? $result : 0;
+		if ($result === null) {
+			return 0;
+		}
+
+		if (!is_int($result)) {
+			$type = get_debug_type($result);
+
+			throw new ValueError(
+				"Command '{$entry->meta->full()}' must return an int or null, {$type} returned",
+			);
+		}
+
+		return $result;
 	}
 
 	/**
