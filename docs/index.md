@@ -76,6 +76,8 @@ $commands->add('cache:clear', 'Clears the cache', function (Args $args, Output $
 
 Class-based commands carry their metadata in the `#[Command]` attribute, which is read without instantiating the class. Factories run only when their command is actually invoked — listing the help never constructs a command.
 
+A command returning no value (such as a `void` closure) maps to exit code 0.
+
 ### Output Methods
 
 - `echo(string $message, string $color = '', string $background = '')` - Output text
@@ -134,6 +136,25 @@ A positional cannot start with `-` — such a token is read as a flag.
 - `commands` - List all command names (useful for shell autocomplete)
 
 The runner reserves no flags, so `--help`/`-h` (and every other flag) belong to your command; use `php run help <command>` for a command's help screen.
+
+A command that wants to answer `--help` itself can render the same screen with the `Help` renderer:
+
+```php
+use Celema\Console\{Args, Help, Output};
+
+public function __invoke(Args $args, Output $out): int
+{
+    if ($args->has('--help') || $args->has('-h')) {
+        new Help($out)->showFor($this);
+
+        return 0;
+    }
+
+    // ...
+}
+```
+
+`showFor()` reads the `#[Command]` and `#[Opt]` attributes off the instance or class, so the flag-triggered screen cannot drift from `php run help <command>`.
 
 ### Debug Mode
 
