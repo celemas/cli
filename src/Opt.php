@@ -14,19 +14,24 @@ use ReflectionClass;
  * Give the flag names and, for value-taking options, a `value` label; the
  * `--opt=<value>` notation is rendered by the runner so it cannot drift from
  * the `=`-only parser. Omit `value` for a boolean flag; set `optionalValue`
- * for a flag whose value is optional (`--opt[=<value>]`).
+ * for a flag whose value is optional (`--opt[=<value>]`). A `default`
+ * renders as `[default: ...]` after the description.
  *
  * @api
  */
 #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 final class Opt
 {
+	// Attribute parameters are passed as named arguments; a parameter
+	// object would defeat the attribute syntax.
+	// @mago-expect lint:excessive-parameter-list
 	public function __construct(
 		public readonly string $long,
 		public readonly string $description,
 		public readonly string $short = '',
 		public readonly string $value = '',
 		public readonly bool $optionalValue = false,
+		public readonly string $default = '',
 	) {}
 
 	/**

@@ -66,4 +66,10 @@ final class Entry
 	{
 		return $this->class === null ? [] : Opt::of($this->class);
 	}
+
+	/** @return list<Arg> */
+	public function args(): array
+	{
+		return $this->class === null ? [] : Arg::of($this->class);
+	}
 }

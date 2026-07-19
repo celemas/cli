@@ -18,8 +18,11 @@ final class Help
 		private readonly Output $output,
 	) {}
 
-	/** @param list<Opt> $opts */
-	public function show(Command $meta, array $opts = []): void
+	/**
+	 * @param list<Opt> $opts
+	 * @param list<Arg> $arguments
+	 */
+	public function show(Command $meta, array $opts = [], array $arguments = []): void
 	{
 		$script = $_SERVER['argv'][0] ?? '';
 
@@ -30,14 +33,38 @@ final class Help
 
 		$usage = $this->output->color('Usage:', 'brown') . "\n  php {$script} {$meta->full()}";
 
-		if ($opts === []) {
-			$this->output->echo("{$usage}\n");
+		foreach ($arguments as $argument) {
+			$usage .= $argument->optional ? " [<{$argument->name}>]" : " <{$argument->name}>";
+		}
 
+		$this->output->echo($usage . ($opts === [] ? "\n" : " [options]\n"));
+		$this->showArguments($arguments);
+		$this->showOptions($opts);
+	}
+
+	/** @param list<Arg> $arguments */
+	private function showArguments(array $arguments): void
+	{
+		if ($arguments === []) {
 			return;
 		}
 
-		$this->output->echo("{$usage} [options]\n\n");
-		$this->output->echoln($this->output->color('Options:', 'brown'));
+		$this->output->echo("\n" . $this->output->color('Arguments:', 'brown') . "\n");
+
+		foreach ($arguments as $argument) {
+			$this->output->echo('    ' . $this->output->color("<{$argument->name}>", 'green') . "\n");
+			$this->output->echo($this->output->indent($argument->description, 8, 80) . "\n");
+		}
+	}
+
+	/** @param list<Opt> $opts */
+	private function showOptions(array $opts): void
+	{
+		if ($opts === []) {
+			return;
+		}
+
+		$this->output->echo("\n" . $this->output->color('Options:', 'brown') . "\n");
 
 		foreach ($opts as $opt) {
 			$suffix = match (true) {
@@ -50,8 +77,12 @@ final class Help
 				? $opt->long . $suffix
 				: "{$opt->short}{$suffix}, {$opt->long}{$suffix}";
 
+			$description = $opt->default === ''
+				? $opt->description
+				: "{$opt->description} [default: {$opt->default}]";
+
 			$this->output->echo('    ' . $this->output->color($option, 'green') . "\n");
-			$this->output->echo($this->output->indent($opt->description, 8, 80) . "\n");
+			$this->output->echo($this->output->indent($description, 8, 80) . "\n");
 		}
 	}
 
@@ -62,6 +93,6 @@ final class Help
 	 */
 	public function showFor(object|string $command): void
 	{
-		$this->show(Command::of($command), Opt::of($command));
+		$this->show(Command::of($command), Opt::of($command), Arg::of($command));
 	}
 }

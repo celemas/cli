@@ -217,7 +217,7 @@ final class Runner
 
 	private function showCommandHelp(Entry $entry): int
 	{
-		new Help($this->output)->show($entry->meta, $entry->opts());
+		new Help($this->output)->show($entry->meta, $entry->opts(), $entry->args());
 
 		return 0;
 	}
