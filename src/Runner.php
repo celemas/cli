@@ -213,40 +213,7 @@ final class Runner
 
 	private function showCommandHelp(Entry $entry): int
 	{
-		$meta = $entry->meta;
-		$opts = $entry->opts();
-		$script = $_SERVER['argv'][0] ?? '';
-
-		if ($meta->description !== '') {
-			$label = $this->output->color('Description:', 'brown') . "\n";
-			$this->output->echo("{$label}  {$meta->description}\n\n");
-		}
-
-		$usage = $this->output->color('Usage:', 'brown') . "\n  php {$script} {$meta->full()}";
-
-		if ($opts === []) {
-			$this->output->echo("{$usage}\n");
-
-			return 0;
-		}
-
-		$this->output->echo("{$usage} [options]\n\n");
-		$this->output->echoln($this->output->color('Options:', 'brown'));
-
-		foreach ($opts as $opt) {
-			$suffix = match (true) {
-				$opt->value === '' => '',
-				$opt->optionalValue => "[=<{$opt->value}>]",
-				default => "=<{$opt->value}>",
-			};
-
-			$option = $opt->short === ''
-				? $opt->long . $suffix
-				: "{$opt->short}{$suffix}, {$opt->long}{$suffix}";
-
-			$this->output->echo('    ' . $this->output->color($option, 'green') . "\n");
-			$this->output->echo($this->output->indent($opt->description, 8, 80) . "\n");
-		}
+		new Help($this->output)->show($entry->meta, $entry->opts());
 
 		return 0;
 	}
