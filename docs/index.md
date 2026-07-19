@@ -12,43 +12,24 @@ composer require celema/console
 
 ## Quick Start
 
-Create a Command:
+A command is a plain class with a `#[Command]` attribute and an `__invoke()` method receiving the parsed arguments and the output:
 
 ```php
-use Celema\Console\{Args, Command};
+use Celema\Console\{Args, Command, Opt, Output};
 
-class MyCommand extends Command {
-    /**
-     * The name by which the MyCommand::run() method
-     * is invoked from the command line.
-     */
-    protected string $name = 'mycommand';
-
-    /**
-     * A namespace used to distinguish equally named commands
-     * from different package, e. g. `grp:mycommand`
-     */
-    protected string $prefix = 'grp'; // optional
-
-    /**
-     * The group name under which the command will be
-     * listed in the help. Also used as prefix (lowercased)
-     * if the prefix is missing
-     */
-    protected string $group = 'MyGroup';
-
-    /**
-     * A short description displayed in the command list
-     */
-    protected string $description = 'This is my command description';
-
-    /**
-     * The entry point of the command. Receives the parsed arguments and
-     * returns an exit code (use the SUCCESS / FAILURE constants).
-     */
-    public function run(Args $args): int
+// The first argument is the name by which the command is invoked from the
+// command line. An optional `grp:` prefix namespaces the command and groups
+// it in the help overview; `group` overrides the displayed group title.
+#[Command('grp:mycommand', 'This is my command description', group: 'My Group')]
+// Optional: each #[Opt] describes one option in the command's help text
+// (e.g. `php run help mycommand`).
+#[Opt('--stuff', 'Description of --stuff', short: '-s', value: 'stuff')]
+#[Opt('--verbose', 'Enable verbose output', short: '-v')]
+class MyCommand
+{
+    public function __invoke(Args $args, Output $out): int
     {
-        $this->echo("Run my command\n");
+        $out->echo("Run my command\n");
 
         // Read options and positionals from the injected Args
         $name = $args->positional(0, 'world');   // first positional, or default
@@ -56,34 +37,44 @@ class MyCommand extends Command {
         $force = $args->has('--force');          // boolean flag
 
         // Output helpers with color support (warn/error go to STDERR)
-        $this->info("Informational message");
-        $this->success("Success message");
-        $this->warn("Warning message");
-        $this->error("Error message");
+        $out->info('Informational message');
+        $out->success('Success message');
+        $out->warn('Warning message');
+        $out->error('Error message');
 
         // echoln adds a newline automatically
-        $this->echoln("Message with automatic newline");
+        $out->echoln('Message with automatic newline');
 
-        return self::SUCCESS;
-    }
-
-    /**
-     * Optional:
-     * Used to add information to the commands help text
-     * (e. g. `php run help <command>`)
-     */
-    public function help(): void
-    {
-        $this->helpHeader(withOptions: true);
-        // Renders "-s=<stuff>, --stuff=<stuff>"
-        $this->helpOption('--stuff', 'Description of --stuff', short: '-s', value: 'stuff');
-        // Renders "-v, --verbose"
-        $this->helpOption('--verbose', 'Enable verbose output', short: '-v');
+        return 0;
     }
 }
 ```
 
+The constructor is yours: take whatever dependencies the command needs and register an instance or a factory (see below).
+
 ## Features
+
+### Registering Commands
+
+`Commands` accepts instances, class-strings, lazy factories, and named closures:
+
+```php
+use Celema\Console\{Args, Commands, Output};
+
+$commands = new Commands([
+    new MyCommand(),                          // instance
+    Simple::class,                            // zero-argument constructor
+    Expensive::class => fn() => new Expensive($db), // lazy factory
+]);
+
+// A closure as a lightweight one-off command
+$commands->add('cache:clear', 'Clears the cache', function (Args $args, Output $out): int {
+    // ...
+    return 0;
+});
+```
+
+Class-based commands carry their metadata in the `#[Command]` attribute, which is read without instantiating the class. Factories run only when their command is actually invoked — listing the help never constructs a command.
 
 ### Output Methods
 
@@ -104,7 +95,7 @@ Background: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `magenta`, `cya
 
 ### Command-Line Arguments
 
-The Runner parses the command's arguments and passes them to `run(Args $args)`:
+The Runner parses the command's arguments and passes them to `__invoke(Args $args, Output $out)`:
 
 ```bash
 php run mycommand up --conn=sqlite --force
@@ -123,6 +114,19 @@ $args->has('--force');           // true
 ```
 
 A positional cannot start with `-` — such a token is read as a flag.
+
+### Command Help
+
+`php run help <command>` renders the description and usage line from the `#[Command]` attribute and one entry per `#[Opt]` attribute:
+
+```php
+#[Opt('--stuff', 'Description of --stuff', short: '-s', value: 'stuff')]
+// Renders "-s=<stuff>, --stuff=<stuff>"
+#[Opt('--verbose', 'Enable verbose output', short: '-v')]
+// Renders "-v, --verbose"
+#[Opt('--watch', 'Optionally watch files', value: 'file', optionalValue: true)]
+// Renders "--watch[=<file>]"
+```
 
 ### Built-in Commands
 
@@ -169,7 +173,7 @@ Run my command
 $ php run help
 Available commands:
 
-MyGroup
+My Group
     grp:mycommand  This is my command description
 
 $ php run help mycommand

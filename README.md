@@ -12,8 +12,11 @@ A command line interface helper.
 
 ## Features
 
-- Simple command creation with automatic help generation
+- Commands are plain classes marked with a `#[Command]` attribute — no base class, free constructors
+- Automatic help generation from `#[Command]` and `#[Opt]` attributes
 - Parsed options and positional arguments via an injected `Args` object
+- Lazy command construction: factories run only for the invoked command
+- Closures as lightweight one-off commands
 - Built-in color support for terminal output
 - Command help with `php run help <command>`
 - Built-in `commands` command for shell autocomplete
@@ -31,23 +34,22 @@ composer require celema/console
 
 ## Quick Start
 
-Create a command by extending `Celema\Console\Command`:
+A command is a plain invokable class with a `#[Command]` attribute:
 
 ```php
-use Celema\Console\{Args, Command};
+use Celema\Console\{Args, Command, Opt, Output};
 
-class MyCommand extends Command {
-    protected string $name = 'mycommand';
-    protected string $group = 'MyGroup';
-    protected string $description = 'This is my command';
-
-    public function run(Args $args): int
+#[Command('grp:mycommand', 'This is my command')]
+#[Opt('--force', 'Skip the safety net')]
+class MyCommand
+{
+    public function __invoke(Args $args, Output $out): int
     {
         $name = $args->positional(0, 'world');
-        $this->info("Running my command for {$name}");
-        $this->success("Command completed!");
+        $out->info("Running my command for {$name}");
+        $out->success('Command completed!');
 
-        return self::SUCCESS;
+        return 0;
     }
 }
 ```

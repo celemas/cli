@@ -2,7 +2,18 @@
 
 ## [Unreleased](https://codeberg.org/celema/console/compare/0.3.0...HEAD)
 
-No notable changes since the last release.
+### Breaking Changes
+
+- Removed the abstract `Command` base class. Commands are now plain classes marked with a `#[Command('prefix:name', 'description')]` attribute and invoked via `__invoke(Args $args, Output $out): int`. The `name`, `group`, `prefix`, and `description` properties are gone; an optional `group` attribute argument overrides the displayed group title, which otherwise derives from the capitalized prefix.
+- Removed `Command::SUCCESS` / `Command::FAILURE`; return plain `0` / `1`.
+- Removed the `help()`/`helpHeader()`/`helpOption()` help API. Declare options with repeatable class-level `#[Opt]` attributes; the runner renders the help screen from the attributes.
+- Moved the message helpers `info()`, `success()`, `warn()`, and `error()` from `Command` to `Output`, which commands now receive as their second `__invoke()` parameter. `Command::script()` is gone; read `$_SERVER['argv'][0]` if needed.
+- `Commands::get()` was replaced by `Commands::entries()`, which returns internal registration entries consumed by the `Runner`.
+
+### Added
+
+- Commands can be registered as class-strings (zero-argument constructor) and as lazy factories keyed by class-string: `[Expensive::class => fn() => ...]`. Metadata is read from the attribute without instantiation, so building the help overview constructs no commands.
+- Closures can be registered as lightweight commands: `$commands->add('cache:clear', 'Clears the cache', fn(Args $args, Output $out): int => ...)`.
 
 ## [0.3.0](https://codeberg.org/celema/console/src/tag/0.3.0) (2026-07-18)
 
