@@ -14,6 +14,7 @@
 
 - Commands can be registered as class-strings (zero-argument constructor) and as lazy factories keyed by class-string: `[Expensive::class => fn() => ...]`. Metadata is read from the attribute without instantiation, so building the help overview constructs no commands.
 - Closures can be registered as lightweight commands: `$commands->add('cache:clear', 'Clears the cache', fn(Args $args, Output $out): int => ...)`.
+- Added the `Help` renderer. The runner uses it for `help <command>`, and commands that intercept a `--help` flag themselves can render the same screen with `new Help($out)->showFor($this)`.
 
 ## [0.3.0](https://codeberg.org/celema/console/src/tag/0.3.0) (2026-07-18)
 
