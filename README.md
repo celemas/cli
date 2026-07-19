@@ -18,7 +18,7 @@ A command line interface helper.
 - Parsed options and positional arguments via an injected `Args` object
 - Lazy command construction: factories run only for the invoked command
 - Closures as lightweight one-off commands
-- Built-in color support for terminal output
+- Built-in color support with per-stream terminal detection and `NO_COLOR`/`FORCE_COLOR` handling
 - Command help with `php run help <command>`
 - Built-in `commands` command for shell autocomplete
 - `--key=value` options (repeatable) and boolean `--flag` / `-h` flags

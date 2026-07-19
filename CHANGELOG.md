@@ -10,6 +10,7 @@
 - Removed the `help()`/`helpHeader()`/`helpOption()` help API. Declare options with repeatable class-level `#[Opt]` attributes; the runner renders the help screen from the attributes.
 - Moved the message helpers `info()`, `success()`, `warn()`, and `error()` from `Command` to `Io`, which commands now receive as their second `__invoke()` parameter. `Command::script()` is gone; read `$_SERVER['argv'][0]` if needed.
 - `Commands::get()` was replaced by `Commands::entries()`, which returns internal registration entries consumed by the `Runner`.
+- `Io::color()` and the color parameters of the echo helpers now throw a `ValueError` for an unknown color or background name instead of silently printing the text unstyled — also when colors are disabled, so typos surface in tests. The protected `Io::hasColorSupport()` now takes the stream to decide for.
 - The runner now validates provided options against a command's declared `#[Opt]` attributes: an unknown option, a value on a boolean flag, or a missing required value aborts with exit code 1 (with a "Did you mean" suggestion for near misses, and a pointer to `help <command>` for an undeclared `--help`/`-h`). Commands declaring no options — including closures — keep accepting arbitrary options. A command that intercepts `--help` itself must declare it, for example `#[Opt('--help', 'Show this help', short: '-h')]`.
 
 ### Added
@@ -20,8 +21,17 @@
 - Added `Args::names()` returning the names of all provided options.
 - Added the repeatable class-level `#[Arg('name', 'description', optional: ...)]` attribute describing positional arguments: they render in the usage line (`<name>` / `[<name>]`) and as an "Arguments:" section of the command help.
 - Added a `default` field on `#[Opt]`, rendered as `[default: ...]` after the option description.
-- Added interactive prompts on `Io`: `ask(string $question, string $default = '', bool $hidden = false)` reads one line from the input stream (`hidden` disables terminal echo, for example for passwords), and `confirm(string $question, bool $default = false)` asks a yes/no question. `Io` takes the input target as a new third constructor argument (default `php://stdin`); `BufferedIo` accepts an `$input` string feeding the prompts, one line each.
+- Added interactive prompts on `Io`: `ask(string $question, string $default = '', bool $hidden = false)` reads one line from the input stream (`hidden` disables terminal echo, for example for passwords), and `confirm(string $question, bool $default = false)` asks a yes/no question. Hidden answers keep their whitespace (only the trailing newline is stripped), and the saved terminal state is restored even when reading fails. `Io` takes the input target as a new third constructor argument (default `php://stdin`); `BufferedIo` accepts an `$input` string feeding the prompts, one line each.
 - Added `BufferedIo` for tests: it captures regular and error output in memory (`output()` / `errorOutput()`) and disables colors, so assertions need no escape-code stripping. `Runner` now also accepts a ready `Io` instance in place of the output target string.
+
+### Changed
+
+- Color support is decided per stream instead of once against `STDOUT`: the error helpers check the error stream, so redirecting one stream no longer discolors the other or writes escape codes into a redirected file.
+- `NO_COLOR` and `FORCE_COLOR` follow the common conventions: an empty `NO_COLOR` is ignored, and `FORCE_COLOR=0` or `FORCE_COLOR=false` disables colors instead of forcing them on.
+
+### Fixed
+
+- An output, error, or input target that cannot be opened now throws a `RuntimeException` naming the target on first use, instead of a `TypeError` on the first write.
 
 ## [0.3.0](https://codeberg.org/celema/console/src/tag/0.3.0) (2026-07-18)
 

@@ -61,7 +61,7 @@ final class BufferedIo extends Io
 	}
 
 	#[Override]
-	protected function hasColorSupport(): bool
+	protected function hasColorSupport(mixed $stream): bool
 	{
 		return false;
 	}

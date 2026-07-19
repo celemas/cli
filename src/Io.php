@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Celema\Console;
 
+use RuntimeException;
+use ValueError;
+
 /**
  * @api
  */
@@ -57,22 +60,26 @@ class Io
 
 	public function echo(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write($this->stdout(), $this->styled($text, $color, $background));
+		$stream = $this->stdout();
+		$this->write($stream, $this->styled($stream, $text, $color, $background));
 	}
 
 	public function echoln(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write($this->stdout(), $this->styled($text, $color, $background) . PHP_EOL);
+		$stream = $this->stdout();
+		$this->write($stream, $this->styled($stream, $text, $color, $background) . PHP_EOL);
 	}
 
 	public function echoErr(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write($this->stderr(), $this->styled($text, $color, $background));
+		$stream = $this->stderr();
+		$this->write($stream, $this->styled($stream, $text, $color, $background));
 	}
 
 	public function echolnErr(string $text, string $color = '', string $background = ''): void
 	{
-		$this->write($this->stderr(), $this->styled($text, $color, $background) . PHP_EOL);
+		$stream = $this->stderr();
+		$this->write($stream, $this->styled($stream, $text, $color, $background) . PHP_EOL);
 	}
 
 	public function info(string $message): void
@@ -100,12 +107,15 @@ class Io
 	 *
 	 * A trimmed empty answer (or end of input) yields the default. With
 	 * `hidden` the terminal echo is switched off while typing, for example
-	 * for passwords; without a terminal the input is simply read as is.
+	 * for passwords, and the answer keeps its whitespace; only the trailing
+	 * newline is stripped. Without a terminal (or without `stty`, as on
+	 * Windows) the input is simply read as is, visibly.
 	 */
 	public function ask(string $question, string $default = '', bool $hidden = false): string
 	{
 		$this->echo($question . ' ');
-		$answer = trim($this->readline($hidden));
+		$line = $this->readline($hidden);
+		$answer = $hidden ? rtrim($line, characters: "\r\n") : trim($line);
 
 		return $answer === '' ? $default : $answer;
 	}
@@ -134,14 +144,20 @@ class Io
 		if ($hidden && stream_isatty($stream)) {
 			// @codeCoverageIgnoreStart
 			/** @psalm-suppress ForbiddenCode */
-			shell_exec('stty -echo');
-			$line = (string) fgets($stream);
+			$previous = trim((string) shell_exec('stty -g'));
 
 			/** @psalm-suppress ForbiddenCode */
-			shell_exec('stty echo');
-			$this->echo(PHP_EOL);
+			shell_exec('stty -echo');
 
-			return $line;
+			try {
+				return (string) fgets($stream);
+			} finally {
+				// Restore the saved terminal state rather than assuming
+				// echo was on, even when reading throws.
+				/** @psalm-suppress ForbiddenCode */
+				shell_exec($previous === '' ? 'stty echo' : 'stty ' . escapeshellarg($previous));
+				$this->echo(PHP_EOL);
+			}
 
 			// @codeCoverageIgnoreEnd
 		}
@@ -149,9 +165,11 @@ class Io
 		return (string) fgets($stream);
 	}
 
-	private function styled(string $text, string $color, string $background): string
+	private function styled(mixed $stream, string $text, string $color, string $background): string
 	{
-		return $color || $background ? $this->color($text, $color, $background) : $text;
+		return $color !== '' || $background !== ''
+			? $this->colorize($stream, $text, $color, $background)
+			: $text;
 	}
 
 	private function write(mixed $stream, string $text): void
@@ -160,22 +178,37 @@ class Io
 		fflush($stream);
 	}
 
+	/**
+	 * Wraps the text in ANSI codes for the given color names.
+	 *
+	 * Unknown names throw a ValueError even when colors are disabled. The
+	 * decision whether to emit codes is made against the regular output
+	 * stream; the echo helpers decide against the stream they write to.
+	 */
 	public function color(string $text, string $color = '', string $background = ''): string
 	{
-		if (!$this->hasColorSupport()) {
-			return $text;
-		}
+		return $this->colorize($this->stdout(), $text, $color, $background);
+	}
 
+	private function colorize(mixed $stream, string $text, string $color, string $background): string
+	{
 		$colorCode = '';
 		$backgroundCode = '';
 
-		if ($color && array_key_exists($color, $this->fg)) {
-			[$first, $second] = $this->fg[$color];
-			$colorCode = "{$first};{$second}";
+		if ($color !== '') {
+			$pair = $this->fg[$color] ?? throw new ValueError("Unknown color '{$color}'");
+			$colorCode = "{$pair[0]};{$pair[1]}";
 		}
 
-		if ($background && array_key_exists($background, $this->bg)) {
-			$backgroundCode = $this->bg[$background];
+		if ($background !== '') {
+			$code = $this->bg[$background] ?? throw new ValueError(
+				"Unknown background color '{$background}'",
+			);
+			$backgroundCode = (string) $code;
+		}
+
+		if (!$this->hasColorSupport($stream)) {
+			return $text;
 		}
 
 		return $this->formatText($text, $colorCode, $backgroundCode);
@@ -221,17 +254,17 @@ class Io
 		return $this->width = $columns;
 	}
 
-	private function formatText(string $text, string $colorCode, string|int $backgroundCode): string
+	private function formatText(string $text, string $colorCode, string $backgroundCode): string
 	{
-		if ($colorCode && $backgroundCode) {
+		if ($colorCode !== '' && $backgroundCode !== '') {
 			return "\033[{$colorCode};{$backgroundCode}m{$text}\033[0m";
 		}
 
-		if ($colorCode) {
+		if ($colorCode !== '') {
 			return "\033[{$colorCode}m{$text}\033[0m";
 		}
 
-		if ($backgroundCode) {
+		if ($backgroundCode !== '') {
 			return "\033[{$backgroundCode}m{$text}\033[0m";
 		}
 
@@ -240,34 +273,59 @@ class Io
 
 	protected function stdout(): mixed
 	{
-		return $this->stream ??= fopen($this->target, mode: 'w');
+		return $this->stream ??= $this->open($this->target, 'w');
 	}
 
 	protected function stderr(): mixed
 	{
-		return $this->errorStream ??= fopen($this->errorTarget, mode: 'w');
+		return $this->errorStream ??= $this->open($this->errorTarget, 'w');
 	}
 
 	protected function stdin(): mixed
 	{
-		return $this->inputStream ??= fopen($this->inputTarget, mode: 'r');
+		return $this->inputStream ??= $this->open($this->inputTarget, 'r');
 	}
 
-	protected function hasColorSupport(): bool
+	private function open(string $target, string $mode): mixed
 	{
-		if (getenv('NO_COLOR') !== false) {
+		set_error_handler(static fn(): bool => true);
+
+		try {
+			$stream = fopen($target, $mode);
+		} finally {
+			restore_error_handler();
+		}
+
+		if ($stream === false) {
+			throw new RuntimeException("Could not open stream '{$target}'");
+		}
+
+		return $stream;
+	}
+
+	protected function hasColorSupport(mixed $stream): bool
+	{
+		$noColor = getenv('NO_COLOR');
+
+		if ($noColor !== false && $noColor !== '') {
 			return false;
 		}
 
-		// @codeCoverageIgnoreStart
-		if (getenv('FORCE_COLOR') !== false || getenv('COLORTERM') !== false) {
+		$force = getenv('FORCE_COLOR');
+
+		if ($force !== false) {
+			return $force !== '0' && strtolower($force) !== 'false';
+		}
+
+		if (getenv('COLORTERM') !== false) {
 			return true;
 		}
 
 		// Windows
+		// @codeCoverageIgnoreStart
 		if (DIRECTORY_SEPARATOR === '\\') {
 			if (function_exists('sapi_windows_vt100_support')) {
-				return sapi_windows_vt100_support(STDOUT);
+				return sapi_windows_vt100_support($stream);
 			}
 
 			return (
@@ -277,12 +335,8 @@ class Io
 			);
 		}
 
-		if (function_exists('stream_isatty')) {
-			return stream_isatty(STDOUT);
-		}
-
-		return false;
-
 		// @codeCoverageIgnoreEnd
+
+		return stream_isatty($stream);
 	}
 }

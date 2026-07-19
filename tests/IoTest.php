@@ -6,6 +6,8 @@ namespace Celema\Console\Tests;
 
 use Celema\Console\BufferedIo;
 use Celema\Console\Io;
+use RuntimeException;
+use ValueError;
 
 class IoTest extends TestCase
 {
@@ -53,6 +55,92 @@ class IoTest extends TestCase
 		$this->assertSame('test', $io->color('test', 'red'));
 		putenv('NO_COLOR');
 		putenv('FORCE_COLOR');
+	}
+
+	public function testUnknownColorThrows(): void
+	{
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage("Unknown color 'gren'");
+
+		new Io('php://output')->color('test', 'gren');
+	}
+
+	public function testUnknownBackgroundColorThrows(): void
+	{
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage("Unknown background color 'gren'");
+
+		new Io('php://output')->color('test', background: 'gren');
+	}
+
+	public function testColorNamesAreValidatedEvenWithColorsDisabled(): void
+	{
+		$this->expectException(ValueError::class);
+
+		new BufferedIo()->echoln('test', 'gren');
+	}
+
+	public function testForceColorZeroDisablesColors(): void
+	{
+		putenv('FORCE_COLOR=0');
+		$io = new Io('php://output');
+		$this->assertSame('test', $io->color('test', 'red'));
+
+		putenv('FORCE_COLOR=false');
+		$this->assertSame('test', $io->color('test', 'red'));
+		putenv('FORCE_COLOR');
+	}
+
+	public function testEmptyNoColorIsIgnored(): void
+	{
+		putenv('NO_COLOR=');
+		putenv('FORCE_COLOR=1');
+		$io = new Io('php://output');
+
+		$this->assertSame("\033[0;31mtest\033[0m", $io->color('test', 'red'));
+		putenv('NO_COLOR');
+		putenv('FORCE_COLOR');
+	}
+
+	public function testColorTermEnablesColors(): void
+	{
+		putenv('NO_COLOR');
+		putenv('FORCE_COLOR');
+		$colorterm = getenv('COLORTERM');
+		putenv('COLORTERM=truecolor');
+
+		try {
+			$this->assertSame("\033[0;31mtest\033[0m", new Io('php://output')->color('test', 'red'));
+		} finally {
+			putenv($colorterm === false ? 'COLORTERM' : "COLORTERM={$colorterm}");
+		}
+	}
+
+	public function testColorsDisabledWithoutTerminalOrEnvOverride(): void
+	{
+		putenv('NO_COLOR');
+		putenv('FORCE_COLOR');
+		$colorterm = getenv('COLORTERM');
+		putenv('COLORTERM');
+
+		try {
+			$out = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
+			$err = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
+			$io = new Io($out, $err);
+			$io->echoln('regular', 'red');
+			$io->echolnErr('error', 'red');
+			$stdout = (string) file_get_contents($out);
+			$stderr = (string) file_get_contents($err);
+			unlink($out);
+			unlink($err);
+
+			$this->assertSame("regular\n", $stdout);
+			$this->assertSame("error\n", $stderr);
+		} finally {
+			if ($colorterm !== false) {
+				putenv("COLORTERM={$colorterm}");
+			}
+		}
 	}
 
 	public function testBackgroundColors(): void
@@ -215,6 +303,21 @@ class IoTest extends TestCase
 		$out = new BufferedIo("secret\n");
 
 		$this->assertSame('secret', $out->ask('Password?', hidden: true));
+	}
+
+	public function testAskHiddenKeepsWhitespaceInTheAnswer(): void
+	{
+		$out = new BufferedIo("  secret pass  \n");
+
+		$this->assertSame('  secret pass  ', $out->ask('Password?', hidden: true));
+	}
+
+	public function testUnopenableTargetThrows(): void
+	{
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage("Could not open stream '/nonexistent/dir/out'");
+
+		new Io('/nonexistent/dir/out')->echo('test');
 	}
 
 	public function testAskReadsOneLinePerPrompt(): void

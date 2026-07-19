@@ -95,6 +95,8 @@ A command returning no value (such as a `void` closure) maps to exit code 0.
 - `color(string $text, string $color, string $background = '')` Return colored text
 - `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text
 
+The constructor takes the output, error, and input targets (`php://output`, `php://stderr`, and `php://stdin` by default). A target that cannot be opened raises a `RuntimeException` on first use.
+
 ### Prompts
 
 `Io` also reads: `ask()` prompts for one line of input, `confirm()` for a yes/no answer.
@@ -114,7 +116,7 @@ public function __invoke(Args $args, Io $io): int
 ```
 
 - An empty answer (or end of input) yields the default.
-- `hidden` disables terminal echo while typing — for passwords. Without a terminal (piped input, tests) the line is simply read as is.
+- `hidden` disables terminal echo while typing — for passwords — and keeps the answer's whitespace; only the trailing newline is stripped. The previous terminal state is restored afterwards, also when reading fails. Without a terminal (piped input, tests) — or without `stty`, as on Windows — the line is simply read as is, visibly.
 - `confirm()` renders the default as `[y/N]` or `[Y/n]`; an answer starting with `y`/`Y` means yes, an empty one means the default, anything else no.
 - The input stream is the third `Io` constructor argument, `php://stdin` by default.
 
@@ -140,6 +142,10 @@ The `Runner` also accepts a ready `Io` instance in place of its output target st
 Foreground: `black`, `gray`/`grey`, `red`, `lightred`, `green`, `lightgreen`, `brown`, `yellow`, `blue`, `lightblue`, `purple`, `lightpurple`, `magenta`, `lightmagenta`, `cyan`, `lightcyan`, `lightgray`/`lightgrey`, `white`
 
 Background: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `magenta`, `cyan`, `gray`/`grey`, `white`
+
+An unknown color name throws a `ValueError` — also when colors are disabled, so a typo surfaces in tests instead of printing unstyled text in production.
+
+Whether codes are actually emitted is decided per stream: a non-empty `NO_COLOR` disables colors, `FORCE_COLOR` forces them on (`FORCE_COLOR=0` or `false` forces them off), `COLORTERM` implies support, and otherwise codes are only written when the stream is a terminal. Redirecting one stream to a file never garbles it while the other stays colored.
 
 ### Command-Line Arguments
 
