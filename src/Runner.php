@@ -328,8 +328,9 @@ final class Runner
 	 * Checks the provided options against the command's declared `#[Opt]`s
 	 * and the positionals against its `#[Arg]`s.
 	 *
-	 * Declaring no options accepts any options, declaring no arguments any
-	 * positionals — so leave `#[Arg]`s undeclared for variadic input.
+	 * The declarations are the command's complete interface: undeclared
+	 * options and positionals are rejected. Declare a variadic `#[Arg]`
+	 * for open-ended input.
 	 */
 	private function validate(Entry $entry, Args $args): void
 	{
@@ -340,11 +341,6 @@ final class Runner
 	private function validateOptions(Entry $entry, Args $args): void
 	{
 		$opts = $entry->opts();
-
-		if ($opts === []) {
-			return;
-		}
-
 		$declared = [];
 
 		foreach ($opts as $opt) {
@@ -377,8 +373,13 @@ final class Runner
 	private function validateArguments(Entry $entry, Args $args): void
 	{
 		$declared = $entry->args();
+		$positionals = $args->positionals();
 
 		if ($declared === []) {
+			if ($positionals !== []) {
+				throw new ValueError("Unexpected argument '{$positionals[0]}'");
+			}
+
 			return;
 		}
 
@@ -408,7 +409,6 @@ final class Runner
 			$required++;
 		}
 
-		$positionals = $args->positionals();
 		$count = count($positionals);
 
 		if ($count < $required) {

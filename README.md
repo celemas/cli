@@ -14,7 +14,7 @@ A command line interface helper.
 
 - Commands are plain classes marked with a `#[Command]` attribute — no base class, free constructors
 - Automatic help generation from `#[Command]`, `#[Arg]`, and `#[Opt]` attributes
-- Declared options and arguments are validated: an unknown or malformed option (with a "Did you mean" suggestion), a missing required argument, or a surplus positional aborts before the command runs
+- Strict by default: the `#[Arg]`/`#[Opt]` declarations are a command's complete interface — an unknown or malformed option (with a "Did you mean" suggestion), a missing required argument, or an undeclared positional aborts before the command runs; a variadic `#[Arg]` takes open-ended input
 - Parsed options and positional arguments via an injected `Args` object
 - Lazy command construction: factories run only for the invoked command
 - Anonymous classes as lightweight one-off commands — attributes work inline
@@ -40,9 +40,10 @@ composer require celema/console
 A command is a plain invokable class with a `#[Command]` attribute:
 
 ```php
-use Celema\Console\{Args, Command, Opt, Io};
+use Celema\Console\{Arg, Args, Command, Opt, Io};
 
 #[Command('grp:mycommand', 'This is my command')]
+#[Arg('name', 'Who to greet', optional: true)]
 #[Opt('--force', 'Skip the safety net')]
 class MyCommand
 {

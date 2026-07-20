@@ -21,12 +21,12 @@ use Celema\Console\{Arg, Args, Command, Opt, Io};
 // command line. An optional `grp:` prefix namespaces the command and groups
 // it in the help overview; `group` overrides the displayed group title.
 #[Command('grp:mycommand', 'This is my command description', group: 'My Group')]
-// Optional: each #[Arg] describes one positional argument and each #[Opt]
-// one option in the command's help text (e.g. `php run help mycommand`).
-// Declared options and arguments are also validated: an unknown or
-// malformed option, a missing required argument, or a surplus positional
-// aborts the command before it runs. Declaring no #[Arg]s accepts any
-// positionals, so leave them undeclared for variadic input.
+// Each #[Arg] describes one positional argument and each #[Opt] one
+// option in the command's help text (e.g. `php run help mycommand`).
+// The declarations are the command's complete interface: an unknown or
+// malformed option, a missing required argument, or an undeclared
+// positional aborts the command before it runs. A `variadic` #[Arg]
+// takes open-ended input.
 #[Arg('name', 'Who to greet', optional: true)]
 #[Opt('--stuff', 'Description of --stuff', short: '-s', value: 'stuff')]
 #[Opt('--conn', 'The database connection', value: 'conn', default: 'sqlite')]
@@ -182,11 +182,11 @@ $args->names();                  // names of all provided options
 
 A positional cannot start with `-` — such a token is read as a flag. When `#[Opt]` declares a short name, the runner normalizes it to the long name before invoking the command. Repeated short and long forms retain their original order, and command code only needs to read the long name.
 
-### Option Validation
+### Validation
 
-For a command class that declares `#[Opt]` attributes, the runner validates the provided options before the command runs: an unknown option (with a "Did you mean" suggestion for near misses), a value on a boolean flag, or a value-taking option without `=value` aborts with exit code 1. So a typo like `--forec` fails loudly instead of being silently ignored.
+The `#[Arg]` and `#[Opt]` declarations are a command's complete interface; the runner validates every invocation against them before the command runs. An unknown or undeclared option (with a "Did you mean" suggestion for near misses), a value on a boolean flag, a value-taking option without `=value`, a missing required argument, or an undeclared positional aborts with exit code 1. So a typo like `--forec` — or an option on a command that takes none — fails loudly instead of being silently ignored.
 
-Commands declaring no options accept arbitrary options and read them from `Args` unchecked.
+For open-ended positional input declare the last argument as variadic, e.g. `#[Arg('files', 'The files to process', variadic: true)]`: it takes all remaining positionals — at least one, or any number when also `optional`.
 
 ### Command Help
 

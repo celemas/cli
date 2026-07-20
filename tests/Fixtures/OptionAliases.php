@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Celema\Console\Tests\Fixtures;
 
+use Celema\Console\Arg;
 use Celema\Console\Args;
 use Celema\Console\Command;
 use Celema\Console\Io;
 use Celema\Console\Opt;
 
 #[Command('aliases')]
+#[Arg('extra', 'Extra tokens', optional: true)]
 #[Opt('--verbose', 'Verbose output', short: '-v')]
 #[Opt('--watch', 'Files to watch', short: '-w', value: 'file')]
 final class OptionAliases

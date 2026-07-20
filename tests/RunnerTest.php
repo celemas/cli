@@ -10,6 +10,7 @@ use Celema\Console\BufferedIo;
 use Celema\Console\Command;
 use Celema\Console\Commands;
 use Celema\Console\Io;
+use Celema\Console\Opt;
 use Celema\Console\Runner;
 use Celema\Console\Tests\Fixtures\Greet;
 use Celema\Console\Tests\Fixtures\HelpVariants;
@@ -237,14 +238,22 @@ class RunnerTest extends TestCase
 		);
 	}
 
-	public function testCommandWithoutDeclaredOptionsAcceptsAnything(): void
+	public function testRejectUndeclaredOption(): void
 	{
-		$_SERVER['argv'] = ['run', 'greet', '--greeting=Hi', '--whatever'];
+		$_SERVER['argv'] = ['run', 'plain', '--whatever'];
 		$out = new BufferedIo();
-		$runner = new Runner(new Commands([new Greet()]), $out);
 
-		$this->assertSame(0, $runner->run());
-		$this->assertSame('Hi, World', $out->output());
+		$this->assertSame(1, new Runner(new Commands([new Fixtures\Plain()]), $out)->run());
+		$this->assertStringContainsString("Unknown option '--whatever'", $out->errorOutput());
+	}
+
+	public function testRejectUndeclaredPositional(): void
+	{
+		$_SERVER['argv'] = ['run', 'plain', 'extra'];
+		$out = new BufferedIo();
+
+		$this->assertSame(1, new Runner(new Commands([new Fixtures\Plain()]), $out)->run());
+		$this->assertStringContainsString("Unexpected argument 'extra'", $out->errorOutput());
 	}
 
 	public function testRejectHelpCommandRegistration(): void
@@ -516,6 +525,7 @@ class RunnerTest extends TestCase
 	{
 		$command = new
 			#[Command('probe', 'Signature probe')]
+			#[Arg('when', 'The when')]
 			class {
 				public string $seen = '';
 
@@ -550,6 +560,7 @@ class RunnerTest extends TestCase
 	{
 		[$code, $out] = $this->runProbe(new
 			#[Command('probe', 'Signature probe')]
+			#[Arg('when', 'The when')]
 			class {
 				public function __invoke(Io $io, Args $args): int
 				{
@@ -832,15 +843,24 @@ class RunnerTest extends TestCase
 		$runner->run();
 	}
 
-	public function testHelpFlagsAreNotReserved(): void
+	public function testDeclaredHelpFlagReachesTheCommand(): void
 	{
-		$_SERVER['argv'] = ['run', 'greet', '--help'];
-		$runner = new Runner(new Commands([new Fixtures\Greet()]));
+		// The runner does not intercept --help/-h; a command that declares
+		// the flag reads it itself. Help stays on `run help <command>`.
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Help probe')]
+			#[Opt('--help', 'Show this help', short: '-h')]
+			class {
+				public function __invoke(Args $args, Io $io): int
+				{
+					$io->echo($args->has('--help') ? 'own help' : 'no help');
 
-		// The runner no longer intercepts --help/-h; the command runs and
-		// may read those flags itself. Help stays on `run help <command>`.
-		$this->expectOutputString('Hello, World');
-		$runner->run();
+					return 0;
+				}
+			}, '--help');
+
+		$this->assertSame(0, $code);
+		$this->assertSame('own help', $out->output());
 	}
 
 	public function testRunClassStringCommand(): void
@@ -857,6 +877,7 @@ class RunnerTest extends TestCase
 		$_SERVER['argv'] = ['run', 'cache:clear', 'now'];
 		$commands = new Commands([new
 			#[Command('cache:clear', 'Clears the cache')]
+			#[Arg('what', 'What to clear')]
 			class {
 				public function __invoke(Args $args, Io $out): int
 				{
