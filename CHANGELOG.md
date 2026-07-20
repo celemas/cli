@@ -5,7 +5,7 @@
 ### Breaking Changes
 
 - Removed the abstract `Command` base class. Commands are now plain classes marked with a `#[Command('prefix:name', 'description')]` attribute and invoked via `__invoke(Args $args, Io $io): int`. The `name`, `group`, `prefix`, and `description` properties are gone; an optional `group` attribute argument overrides the displayed group title, which otherwise derives from the capitalized prefix.
-- Removed `Command::SUCCESS` / `Command::FAILURE`; return plain `0` / `1`. Commands may also return no value, which maps to exit code 0; any other return type now aborts instead of silently succeeding.
+- Removed `Command::SUCCESS` / `Command::FAILURE`; return plain `0` / `1`. Commands must declare the return type `int` — including closure commands; the runner rejects any other declared return type (or a missing one) before invoking the command.
 - Renamed `Output` to `Io` — the object reads (prompts) as well as writes — and the conventional command signature to `__invoke(Args $args, Io $io)`.
 - Removed the `help()`/`helpHeader()`/`helpOption()` help API. Declare options with repeatable class-level `#[Opt]` attributes; the runner renders the help screen from the attributes.
 - Moved the message helpers `info()`, `success()`, `warn()`, and `error()` from `Command` to `Io`, which commands now receive as their second `__invoke()` parameter. `Command::script()` is gone; read `$_SERVER['argv'][0]` if needed.

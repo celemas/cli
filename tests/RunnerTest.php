@@ -12,10 +12,22 @@ use Celema\Console\Runner;
 use Celema\Console\Tests\Fixtures\Greet;
 use Celema\Console\Tests\Fixtures\HelpVariants;
 use Celema\Console\Tests\Fixtures\OptionAliases;
+use Closure;
 use ValueError;
 
 class RunnerTest extends TestCase
 {
+	/** @return array{int, BufferedIo} */
+	private function runClosure(Closure $command, string ...$args): array
+	{
+		$_SERVER['argv'] = ['run', 'probe', ...$args];
+		$commands = new Commands();
+		$commands->add('probe', 'Signature probe', $command);
+		$out = new BufferedIo();
+
+		return [new Runner($commands, $out)->run(), $out];
+	}
+
 	private function runVariants(string ...$args): array
 	{
 		$_SERVER['argv'] = ['run', 'help:variants', ...$args];
@@ -288,7 +300,7 @@ class RunnerTest extends TestCase
 		$commands->add(
 			'boom',
 			'Fails with a ValueError',
-			static function (Args $args, Io $io): void {
+			static function (Args $args, Io $io): int {
 				throw new ValueError('Command failure', 1);
 			},
 		);
@@ -344,21 +356,57 @@ class RunnerTest extends TestCase
 		$this->assertSame(1, $code);
 	}
 
-	public function testRejectInvalidCommandReturnValue(): void
+	public function testRejectNonIntReturnType(): void
 	{
-		$_SERVER['argv'] = ['run', 'broken-return'];
-		$commands = new Commands();
-		$commands->add(
-			'broken-return',
-			'Returns the wrong type',
-			static fn(Args $args, Io $io): bool => false,
-		);
-		$out = new BufferedIo();
-		$code = new Runner($commands, $out)->run();
+		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io): bool => false);
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
-			"Command 'broken-return' must return an int or null, bool returned",
+			"Command 'probe' must declare the return type int",
+			$out->errorOutput(),
+		);
+	}
+
+	public function testRejectMissingReturnType(): void
+	{
+		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io) => 0);
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'probe' must declare the return type int",
+			$out->errorOutput(),
+		);
+	}
+
+	public function testRejectVoidReturnType(): void
+	{
+		[$code, $out] = $this->runClosure(static function (Args $args, Io $io): void {});
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'probe' must declare the return type int",
+			$out->errorOutput(),
+		);
+	}
+
+	public function testRejectNullableReturnType(): void
+	{
+		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io): ?int => 0);
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'probe' must declare the return type int",
+			$out->errorOutput(),
+		);
+	}
+
+	public function testRejectUnionReturnType(): void
+	{
+		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io): int|string => 0);
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'probe' must declare the return type int",
 			$out->errorOutput(),
 		);
 	}
@@ -426,8 +474,10 @@ class RunnerTest extends TestCase
 		$commands->add(
 			'cache:clear',
 			'Clears the cache',
-			static function (Args $args, Io $out): void {
+			static function (Args $args, Io $out): int {
 				$out->echo('cleared ' . (string) $args->positional(0));
+
+				return 0;
 			},
 		);
 		$runner = new Runner($commands);
@@ -436,7 +486,6 @@ class RunnerTest extends TestCase
 		$code = $runner->run();
 		$stdout = (string) ob_get_clean();
 
-		// A closure without return value maps to exit code 0.
 		$this->assertSame(0, $code);
 		$this->assertSame('cleared now', $stdout);
 	}

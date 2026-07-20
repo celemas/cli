@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Celema\Console;
 
+use Closure;
+use ReflectionFunction;
+use ReflectionNamedType;
 use Throwable;
 use ValueError;
 
@@ -245,26 +248,24 @@ final class Runner
 	{
 		$this->validate($entry, $args);
 		$command = $entry->command();
+		$full = $entry->meta->full();
 
 		if (!is_callable($command)) {
-			throw new ValueError("Command '{$entry->meta->full()}' is not callable");
+			throw new ValueError("Command '{$full}' is not callable");
 		}
 
-		$result = $command($args, $this->io);
+		$return = new ReflectionFunction(Closure::fromCallable($command))->getReturnType();
 
-		if ($result === null) {
-			return 0;
+		if (
+			!$return instanceof ReflectionNamedType
+			|| $return->getName() !== 'int'
+			|| $return->allowsNull()
+		) {
+			throw new ValueError("Command '{$full}' must declare the return type int");
 		}
 
-		if (!is_int($result)) {
-			$type = get_debug_type($result);
-
-			throw new ValueError(
-				"Command '{$entry->meta->full()}' must return an int or null, {$type} returned",
-			);
-		}
-
-		return $result;
+		/** @var int Guaranteed by the declared return type under strict_types */
+		return $command($args, $this->io);
 	}
 
 	/**
