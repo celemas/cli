@@ -41,10 +41,10 @@ class BufferedIoTest extends TestCase
 			$out = new BufferedIo();
 			$out->success('done');
 			$out->error('failed');
+			$out->echo('<red>plain</red>');
 
-			$this->assertSame('done' . PHP_EOL, $out->output());
+			$this->assertSame('done' . PHP_EOL . 'plain', $out->output());
 			$this->assertSame('failed' . PHP_EOL, $out->errorOutput());
-			$this->assertSame('plain', $out->color('plain', 'red'));
 		} finally {
 			putenv('FORCE_COLOR');
 		}

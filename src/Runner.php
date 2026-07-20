@@ -91,7 +91,7 @@ final class Runner
 	public function showHelp(): int
 	{
 		$script = $_SERVER['argv'][0] ?? '';
-		$this->io->echo($this->io->color('Usage:', 'brown') . "\n");
+		$this->io->echo("<yellow>Usage:</yellow>\n");
 		$this->io->echo("  php {$script} [prefix:]command [arguments]\n\n");
 		$this->io->echo("Prefixes are optional if the command is unambiguous.\n\n");
 		$this->io->echo("Available commands:\n");
@@ -201,13 +201,15 @@ final class Runner
 
 			return $this->runCommand($entry, $args);
 		} catch (Throwable $e) {
+			// Escape the arbitrary strings: a message containing markup
+			// (or broken markup) must never throw while reporting.
 			$this->io->echoErr("Error while running command '");
-			$this->io->echoErr($_SERVER['argv'][1] ?? '<no command given>');
-			$this->io->echoErr("':\n\n" . $e->getMessage() . "\n");
+			$this->io->echoErr($this->io->escape($_SERVER['argv'][1] ?? '<no command given>'));
+			$this->io->echoErr("':\n\n" . $this->io->escape($e->getMessage()) . "\n");
 
 			if ($this->debug) {
-				$this->io->echolnErr("\nTraceback:", 'yellow');
-				$this->io->echolnErr($e->getTraceAsString());
+				$this->io->echolnErr("\n<yellow>Traceback:</yellow>");
+				$this->io->echolnErr($this->io->escape($e->getTraceAsString()));
 			}
 
 			return 1;
@@ -386,20 +388,16 @@ final class Runner
 
 	private function echoGroup(string $title): void
 	{
-		$g = $this->io->color($title, 'brown');
-		$this->io->echo("\n{$g}\n");
+		$this->io->echo("\n<yellow>{$title}</yellow>\n");
 	}
 
 	private function echoCommand(string $prefix, string $name, string $desc): void
 	{
 		$prefix = $prefix ? $prefix . ':' : '';
-		$plain = $prefix . $name;
-		$colored = $prefix . $this->io->color($name, 'green');
 
-		// Pad on the visible length so columns align whether or not
-		// color escapes are present.
-		$pad = str_repeat(' ', max(2, $this->longestName + 2 - strlen($plain)));
-		$this->io->echoln("  {$colored}{$pad}{$desc}");
+		// Pad on the visible length; the markup tags don't print.
+		$pad = str_repeat(' ', max(2, $this->longestName + 2 - strlen($prefix . $name)));
+		$this->io->echoln("  {$prefix}<green>{$name}</green>{$pad}{$desc}");
 	}
 
 	private function showAmbiguousMessage(string $cmd): int
@@ -409,8 +407,7 @@ final class Runner
 		usort($entries, static fn(Entry $a, Entry $b): int => strcmp($a->meta->full(), $b->meta->full()));
 
 		foreach ($entries as $entry) {
-			$prefix = $this->io->color($entry->meta->prefix, 'brown');
-			$this->io->echolnErr("  {$prefix}:{$entry->meta->name}");
+			$this->io->echolnErr("  <yellow>{$entry->meta->prefix}</yellow>:{$entry->meta->name}");
 		}
 
 		return 1;

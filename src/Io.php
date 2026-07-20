@@ -5,101 +5,81 @@ declare(strict_types=1);
 namespace Celema\Console;
 
 use RuntimeException;
-use ValueError;
 
 /**
+ * The echo methods render the inline console markup, e.g.
+ * `<green>done</green>` or `<strong>1</strong>`; see Markup for the tag
+ * set and passthrough rules. Use `escape()` for text that must print
+ * literally. The message helpers treat their input as plain text.
+ *
  * @api
  */
 class Io
 {
+	private readonly Markup $markup;
 	private mixed $stream = null;
 	private mixed $errorStream = null;
 	private mixed $inputStream = null;
 	private ?int $width = null;
-	private array $fg = [
-		'black' => [0, 30],
-		'gray' => [1, 30],
-		'grey' => [1, 30],
-		'red' => [0, 31],
-		'lightred' => [1, 31],
-		'green' => [0, 32],
-		'lightgreen' => [1, 32],
-		'brown' => [0, 33],
-		'yellow' => [1, 33],
-		'blue' => [0, 34],
-		'lightblue' => [1, 34],
-		'purple' => [0, 35],
-		'lightpurple' => [1, 35],
-		'magenta' => [0, 35],
-		'lightmagenta' => [1, 35],
-		'cyan' => [0, 36],
-		'lightcyan' => [1, 36],
-		'lightgray' => [0, 37],
-		'lightgrey' => [0, 37],
-		'white' => [1, 37],
-	];
-	private array $bg = [
-		'black' => 40,
-		'red' => 41,
-		'green' => 42,
-		'yellow' => 43,
-		'blue' => 44,
-		'purple' => 45,
-		'magenta' => 45,
-		'cyan' => 46,
-		'gray' => 47,
-		'grey' => 47,
-		'white' => 47,
-	];
 
 	public function __construct(
 		protected readonly string $target = 'php://output',
 		protected readonly string $errorTarget = 'php://stderr',
 		protected readonly string $inputTarget = 'php://stdin',
-	) {}
+	) {
+		$this->markup = new Markup();
+	}
 
-	public function echo(string $text, string $color = '', string $background = ''): void
+	public function echo(string $text): void
 	{
 		$stream = $this->stdout();
-		$this->write($stream, $this->styled($stream, $text, $color, $background));
+		$this->write($stream, $this->markup->render($text, $this->hasColorSupport($stream)));
 	}
 
-	public function echoln(string $text, string $color = '', string $background = ''): void
+	public function echoln(string $text): void
 	{
 		$stream = $this->stdout();
-		$this->write($stream, $this->styled($stream, $text, $color, $background) . PHP_EOL);
+		$this->write($stream, $this->markup->render($text, $this->hasColorSupport($stream)) . PHP_EOL);
 	}
 
-	public function echoErr(string $text, string $color = '', string $background = ''): void
+	public function echoErr(string $text): void
 	{
 		$stream = $this->stderr();
-		$this->write($stream, $this->styled($stream, $text, $color, $background));
+		$this->write($stream, $this->markup->render($text, $this->hasColorSupport($stream)));
 	}
 
-	public function echolnErr(string $text, string $color = '', string $background = ''): void
+	public function echolnErr(string $text): void
 	{
 		$stream = $this->stderr();
-		$this->write($stream, $this->styled($stream, $text, $color, $background) . PHP_EOL);
+		$this->write($stream, $this->markup->render($text, $this->hasColorSupport($stream)) . PHP_EOL);
+	}
+
+	/**
+	 * Escapes markup tags so the text prints literally.
+	 */
+	public function escape(string $text): string
+	{
+		return $this->markup->escape($text);
 	}
 
 	public function info(string $message): void
 	{
-		$this->echoln($message);
+		$this->echoln($this->escape($message));
 	}
 
 	public function success(string $message): void
 	{
-		$this->echoln($message, 'green');
+		$this->echoln('<green>' . $this->escape($message) . '</green>');
 	}
 
 	public function warn(string $message): void
 	{
-		$this->echolnErr($message, 'yellow');
+		$this->echolnErr('<yellow>' . $this->escape($message) . '</yellow>');
 	}
 
 	public function error(string $message): void
 	{
-		$this->echolnErr($message, 'red');
+		$this->echolnErr('<red>' . $this->escape($message) . '</red>');
 	}
 
 	/**
@@ -166,53 +146,10 @@ class Io
 		return (string) fgets($stream);
 	}
 
-	private function styled(mixed $stream, string $text, string $color, string $background): string
-	{
-		return $color !== '' || $background !== ''
-			? $this->colorize($stream, $text, $color, $background)
-			: $text;
-	}
-
 	private function write(mixed $stream, string $text): void
 	{
 		fwrite($stream, $text);
 		fflush($stream);
-	}
-
-	/**
-	 * Wraps the text in ANSI codes for the given color names.
-	 *
-	 * Unknown names throw a ValueError even when colors are disabled. The
-	 * decision whether to emit codes is made against the regular output
-	 * stream; the echo helpers decide against the stream they write to.
-	 */
-	public function color(string $text, string $color = '', string $background = ''): string
-	{
-		return $this->colorize($this->stdout(), $text, $color, $background);
-	}
-
-	private function colorize(mixed $stream, string $text, string $color, string $background): string
-	{
-		$colorCode = '';
-		$backgroundCode = '';
-
-		if ($color !== '') {
-			$pair = $this->fg[$color] ?? throw new ValueError("Unknown color '{$color}'");
-			$colorCode = "{$pair[0]};{$pair[1]}";
-		}
-
-		if ($background !== '') {
-			$code = $this->bg[$background] ?? throw new ValueError(
-				"Unknown background color '{$background}'",
-			);
-			$backgroundCode = (string) $code;
-		}
-
-		if (!$this->hasColorSupport($stream)) {
-			return $text;
-		}
-
-		return $this->formatText($text, $colorCode, $backgroundCode);
 	}
 
 	public function indent(
@@ -257,23 +194,6 @@ class Io
 		}
 
 		return $this->width = $columns;
-	}
-
-	private function formatText(string $text, string $colorCode, string $backgroundCode): string
-	{
-		if ($colorCode !== '' && $backgroundCode !== '') {
-			return "\033[{$colorCode};{$backgroundCode}m{$text}\033[0m";
-		}
-
-		if ($colorCode !== '') {
-			return "\033[{$colorCode}m{$text}\033[0m";
-		}
-
-		if ($backgroundCode !== '') {
-			return "\033[{$backgroundCode}m{$text}\033[0m";
-		}
-
-		return $text;
 	}
 
 	protected function stdout(): mixed

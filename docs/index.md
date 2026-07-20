@@ -84,15 +84,15 @@ The runner validates the signature of the invoked command: `__invoke()` (or the 
 
 ### Io Methods
 
-- `echo(string $message, string $color = '', string $background = '')` - Output text
+- `echo(string $text)` - Output text, rendering inline markup
 - `ask(string $question, string $default = '', bool $hidden = false)` - Prompt for one line of input; `hidden` turns off terminal echo, e.g. for passwords
 - `confirm(string $question, bool $default = false)` - Ask a yes/no question, rendered as `[y/N]` or `[Y/n]`
-- `echoln(string $message, string $color = '', string $background = '')` - Output text with newline
+- `echoln(string $text)` - Output text with newline, rendering inline markup
 - `info(string $message)` - Output an informational message
 - `success(string $message)` - Output a success message (green)
 - `warn(string $message)` - Output a warning message (yellow, to STDERR)
 - `error(string $message)` - Output an error message (red, to STDERR)
-- `color(string $text, string $color, string $background = '')` Return colored text
+- `escape(string $text)` - Escape markup tags so the text prints literally
 - `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text
 
 The constructor takes the output, error, and input targets (`php://output`, `php://stderr`, and `php://stdin` by default). A target that cannot be opened raises a `RuntimeException` on first use.
@@ -137,13 +137,19 @@ $this->assertSame('', $io->errorOutput());
 
 The `Runner` also accepts a ready `Io` instance in place of its output target string, so full runs can be captured the same way: `new Runner($commands, $io)`.
 
-### Available Colors
+### Markup
 
-Foreground: `black`, `gray`/`grey`, `red`, `lightred`, `green`, `lightgreen`, `brown`, `yellow`, `blue`, `lightblue`, `purple`, `lightpurple`, `magenta`, `lightmagenta`, `cyan`, `lightcyan`, `lightgray`/`lightgrey`, `white`
+The echo methods render inline markup:
 
-Background: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `magenta`, `cyan`, `gray`/`grey`, `white`
+```php
+$io->echoln('Made <strong>bold</strong>, <green>green</green>, and <u>underlined</u>');
+```
 
-An unknown color name throws a `ValueError` — also when colors are disabled, so a typo surfaces in tests instead of printing unstyled text in production.
+- Style tags: `<strong>`, `<em>`, `<dim>`, `<u>`
+- Color tags: `<black>`, `<red>`, `<green>`, `<yellow>`, `<blue>`, `<magenta>`, `<cyan>`, `<white>`, each also as a `<bright-red>` variant, plus `<gray>` as the readable alias for `<bright-black>`
+- Background tags: the same names with a `bg-` prefix — `<bg-red>`, `<bg-bright-red>`, `<bg-gray>`
+
+Tags compose by nesting, and the innermost tag wins on conflict. Only exact known tags are parsed: `<info@example.com>`, generics, and unknown names pass through untouched, so most text needs no escaping. For text that must print literally — say, user data or exception messages — use `$io->escape()`. Broken markup (a mismatched, dangling, or unclosed tag) throws a `ValueError`, also when colors are disabled, so mistakes surface in tests. The message helpers `info()`, `success()`, `warn()`, and `error()` escape their input and treat it as plain text.
 
 Whether codes are actually emitted is decided per stream: a non-empty `NO_COLOR` disables colors, `FORCE_COLOR` forces them on (`FORCE_COLOR=0` or `false` forces them off), and otherwise codes are only written when the stream is a terminal. `COLORTERM` alone does not color redirected output, so redirecting one stream to a file never garbles it while the other stays colored.
 

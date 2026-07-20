@@ -27,14 +27,15 @@ final class Help
 		$script = $_SERVER['argv'][0] ?? '';
 
 		if ($meta->description !== '') {
-			$label = $this->io->color('Description:', 'brown') . "\n";
-			$this->io->echo("{$label}  {$meta->description}\n\n");
+			$this->io->echo("<yellow>Description:</yellow>\n  {$meta->description}\n\n");
 		}
 
-		$usage = $this->io->color('Usage:', 'brown') . "\n  php {$script} {$meta->full()}";
+		$usage = "<yellow>Usage:</yellow>\n  php {$script} {$meta->full()}";
 
 		foreach ($arguments as $argument) {
-			$usage .= $argument->optional ? " [<{$argument->name}>]" : " <{$argument->name}>";
+			// Escaped: the <name> notation must not parse as markup.
+			$name = $this->io->escape("<{$argument->name}>");
+			$usage .= $argument->optional ? " [{$name}]" : " {$name}";
 		}
 
 		$this->io->echo($usage . ($opts === [] ? "\n" : " [options]\n"));
@@ -49,10 +50,11 @@ final class Help
 			return;
 		}
 
-		$this->io->echo("\n" . $this->io->color('Arguments:', 'brown') . "\n");
+		$this->io->echo("\n<yellow>Arguments:</yellow>\n");
 
 		foreach ($arguments as $argument) {
-			$this->io->echo('    ' . $this->io->color("<{$argument->name}>", 'green') . "\n");
+			$name = $this->io->escape("<{$argument->name}>");
+			$this->io->echo("    <green>{$name}</green>\n");
 			$this->io->echo($this->io->indent($argument->description, 8, 80) . "\n");
 		}
 	}
@@ -64,7 +66,7 @@ final class Help
 			return;
 		}
 
-		$this->io->echo("\n" . $this->io->color('Options:', 'brown') . "\n");
+		$this->io->echo("\n<yellow>Options:</yellow>\n");
 
 		foreach ($opts as $opt) {
 			$suffix = match (true) {
@@ -81,7 +83,7 @@ final class Help
 				? $opt->description
 				: "{$opt->description} [default: {$opt->default}]";
 
-			$this->io->echo('    ' . $this->io->color($option, 'green') . "\n");
+			$this->io->echo('    <green>' . $this->io->escape($option) . "</green>\n");
 			$this->io->echo($this->io->indent($description, 8, 80) . "\n");
 		}
 	}

@@ -17,32 +17,15 @@ class IoTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testForegroundColors(): void
+	public function testRendersMarkupOnColoredStreams(): void
 	{
 		putenv('FORCE_COLOR=1');
-		$io = new Io('php://output');
 
-		$this->assertSame("\033[0;30mtest\033[0m", $io->color('test', 'black'));
-		$this->assertSame("\033[1;30mtest\033[0m", $io->color('test', 'gray'));
-		$this->assertSame("\033[1;30mtest\033[0m", $io->color('test', 'grey'));
-		$this->assertSame("\033[0;31mtest\033[0m", $io->color('test', 'red'));
-		$this->assertSame("\033[1;31mtest\033[0m", $io->color('test', 'lightred'));
-		$this->assertSame("\033[0;32mtest\033[0m", $io->color('test', 'green'));
-		$this->assertSame("\033[1;32mtest\033[0m", $io->color('test', 'lightgreen'));
-		$this->assertSame("\033[0;33mtest\033[0m", $io->color('test', 'brown'));
-		$this->assertSame("\033[1;33mtest\033[0m", $io->color('test', 'yellow'));
-		$this->assertSame("\033[0;34mtest\033[0m", $io->color('test', 'blue'));
-		$this->assertSame("\033[1;34mtest\033[0m", $io->color('test', 'lightblue'));
-		$this->assertSame("\033[0;35mtest\033[0m", $io->color('test', 'magenta'));
-		$this->assertSame("\033[1;35mtest\033[0m", $io->color('test', 'lightmagenta'));
-		$this->assertSame("\033[0;35mtest\033[0m", $io->color('test', 'purple'));
-		$this->assertSame("\033[1;35mtest\033[0m", $io->color('test', 'lightpurple'));
-		$this->assertSame("\033[0;36mtest\033[0m", $io->color('test', 'cyan'));
-		$this->assertSame("\033[1;36mtest\033[0m", $io->color('test', 'lightcyan'));
-		$this->assertSame("\033[0;37mtest\033[0m", $io->color('test', 'lightgray'));
-		$this->assertSame("\033[0;37mtest\033[0m", $io->color('test', 'lightgrey'));
-		$this->assertSame("\033[1;37mtest\033[0m", $io->color('test', 'white'));
-		$this->assertSame('test', $io->color('test'));
+		ob_start();
+		new Io('php://output')->echo('<red>test</red>');
+		$out = (string) ob_get_clean();
+
+		$this->assertSame("\033[31mtest\033[0m", $out);
 		putenv('FORCE_COLOR');
 	}
 
@@ -50,44 +33,38 @@ class IoTest extends TestCase
 	{
 		putenv('FORCE_COLOR=1');
 		$io = new Io('php://output');
-		$this->assertSame("\033[0;31mtest\033[0m", $io->color('test', 'red'));
+
+		ob_start();
+		$io->echo('<red>test</red>');
 		putenv('NO_COLOR=1');
-		$this->assertSame('test', $io->color('test', 'red'));
+		$io->echo('<red>test</red>');
+		$out = (string) ob_get_clean();
+
+		$this->assertSame("\033[31mtest\033[0mtest", $out);
 		putenv('NO_COLOR');
 		putenv('FORCE_COLOR');
 	}
 
-	public function testUnknownColorThrows(): void
+	public function testMarkupIsValidatedEvenWithColorsDisabled(): void
 	{
 		$this->expectException(ValueError::class);
-		$this->expectExceptionMessage("Unknown color 'gren'");
+		$this->expectExceptionMessage("Unclosed markup tag '<em>'");
 
-		new Io('php://output')->color('test', 'gren');
-	}
-
-	public function testUnknownBackgroundColorThrows(): void
-	{
-		$this->expectException(ValueError::class);
-		$this->expectExceptionMessage("Unknown background color 'gren'");
-
-		new Io('php://output')->color('test', background: 'gren');
-	}
-
-	public function testColorNamesAreValidatedEvenWithColorsDisabled(): void
-	{
-		$this->expectException(ValueError::class);
-
-		new BufferedIo()->echoln('test', 'gren');
+		new BufferedIo()->echoln('<em>test');
 	}
 
 	public function testForceColorZeroDisablesColors(): void
 	{
 		putenv('FORCE_COLOR=0');
 		$io = new Io('php://output');
-		$this->assertSame('test', $io->color('test', 'red'));
 
+		ob_start();
+		$io->echo('<red>test</red>');
 		putenv('FORCE_COLOR=false');
-		$this->assertSame('test', $io->color('test', 'red'));
+		$io->echo('<red>test</red>');
+		$out = (string) ob_get_clean();
+
+		$this->assertSame('testtest', $out);
 		putenv('FORCE_COLOR');
 	}
 
@@ -95,9 +72,12 @@ class IoTest extends TestCase
 	{
 		putenv('NO_COLOR=');
 		putenv('FORCE_COLOR=1');
-		$io = new Io('php://output');
 
-		$this->assertSame("\033[0;31mtest\033[0m", $io->color('test', 'red'));
+		ob_start();
+		new Io('php://output')->echo('<red>test</red>');
+		$out = (string) ob_get_clean();
+
+		$this->assertSame("\033[31mtest\033[0m", $out);
 		putenv('NO_COLOR');
 		putenv('FORCE_COLOR');
 	}
@@ -127,8 +107,8 @@ class IoTest extends TestCase
 		$out = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
 		$err = (string) tempnam(sys_get_temp_dir(), prefix: 'cli');
 		$io = new Io($out, $err);
-		$io->echoln('regular', 'red');
-		$io->echolnErr('error', 'red');
+		$io->echoln('<red>regular</red>');
+		$io->echolnErr('<red>error</red>');
 		$stdout = (string) file_get_contents($out);
 		$stderr = (string) file_get_contents($err);
 		unlink($out);
@@ -138,35 +118,20 @@ class IoTest extends TestCase
 		$this->assertSame("error\n", $stderr);
 	}
 
-	public function testBackgroundColors(): void
+	public function testEscapeRendersTagsLiterally(): void
 	{
-		putenv('FORCE_COLOR=1');
-		$io = new Io('php://output');
+		$out = new BufferedIo();
+		$out->echo($out->escape('keep <green>this</green> plain'));
 
-		$this->assertSame("\033[0;37;40mtest\033[0m", $io->color('test', 'lightgrey', 'black'));
-		$this->assertSame("\033[1;37;41mtest\033[0m", $io->color('test', 'white', 'red'));
-		$this->assertSame("\033[1;32;42mtest\033[0m", $io->color('test', 'lightgreen', 'green'));
-		$this->assertSame("\033[1;33;43mtest\033[0m", $io->color('test', 'yellow', 'yellow'));
-		$this->assertSame("\033[0;34;44mtest\033[0m", $io->color('test', 'blue', 'blue'));
-		$this->assertSame("\033[1;35;45mtest\033[0m", $io->color('test', 'lightpurple', 'purple'));
-		$this->assertSame("\033[0;35;45mtest\033[0m", $io->color('test', 'purple', 'magenta'));
-		$this->assertSame("\033[0;36;46mtest\033[0m", $io->color('test', 'cyan', 'cyan'));
-		$this->assertSame("\033[1;37;47mtest\033[0m", $io->color('test', 'white', 'white'));
-		$this->assertSame("\033[1;37;47mtest\033[0m", $io->color('test', 'white', 'gray'));
-		$this->assertSame("\033[1;37;47mtest\033[0m", $io->color('test', 'white', 'grey'));
+		$this->assertSame('keep <green>this</green> plain', $out->output());
+	}
 
-		$this->assertSame("\033[40mtest\033[0m", $io->color('test', background: 'black'));
-		$this->assertSame("\033[41mtest\033[0m", $io->color('test', background: 'red'));
-		$this->assertSame("\033[42mtest\033[0m", $io->color('test', background: 'green'));
-		$this->assertSame("\033[43mtest\033[0m", $io->color('test', background: 'yellow'));
-		$this->assertSame("\033[44mtest\033[0m", $io->color('test', background: 'blue'));
-		$this->assertSame("\033[45mtest\033[0m", $io->color('test', background: 'purple'));
-		$this->assertSame("\033[45mtest\033[0m", $io->color('test', background: 'magenta'));
-		$this->assertSame("\033[46mtest\033[0m", $io->color('test', background: 'cyan'));
-		$this->assertSame("\033[47mtest\033[0m", $io->color('test', background: 'white'));
-		$this->assertSame("\033[47mtest\033[0m", $io->color('test', background: 'gray'));
-		$this->assertSame("\033[47mtest\033[0m", $io->color('test', background: 'grey'));
-		putenv('FORCE_COLOR');
+	public function testMessageHelpersTreatInputAsPlainText(): void
+	{
+		$out = new BufferedIo();
+		$out->error('broken </em> markup <green>included');
+
+		$this->assertSame('broken </em> markup <green>included' . PHP_EOL, $out->errorOutput());
 	}
 
 	public function testIndent(): void
@@ -212,9 +177,9 @@ class IoTest extends TestCase
 		$result = (string) ob_get_clean();
 
 		$this->assertStringContainsString("information\n", $result);
-		$this->assertStringContainsString("\033[0;32msucceeded\033[0m\n", $result);
-		$this->assertStringContainsString("\033[1;33mwarning\033[0m\n", $result);
-		$this->assertStringContainsString("\033[0;31mfailed\033[0m\n", $result);
+		$this->assertStringContainsString("\033[32msucceeded\033[0m\n", $result);
+		$this->assertStringContainsString("\033[33mwarning\033[0m\n", $result);
+		$this->assertStringContainsString("\033[31mfailed\033[0m\n", $result);
 		putenv('FORCE_COLOR');
 	}
 
@@ -246,7 +211,7 @@ class IoTest extends TestCase
 
 		ob_start();
 		$io->echoErr('boom');
-		$io->echolnErr('bang', 'red');
+		$io->echolnErr('<red>bang</red>');
 		$stdout = (string) ob_get_clean();
 
 		$contents = (string) file_get_contents($err);
