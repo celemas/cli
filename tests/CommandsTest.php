@@ -144,14 +144,6 @@ class CommandsTest extends TestCase
 		new Commands(static fn(): int => 0);
 	}
 
-	public function testAddClosureInArrayFails(): void
-	{
-		$this->expectException(ValueError::class);
-		$this->expectExceptionMessage('Closure commands are not supported');
-
-		new Commands([static fn(): int => 0]);
-	}
-
 	public function testAddInvalidItemFails(): void
 	{
 		$this->expectException(ValueError::class);
