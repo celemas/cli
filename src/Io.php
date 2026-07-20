@@ -152,6 +152,11 @@ class Io
 		fflush($stream);
 	}
 
+	/**
+	 * Indents the text and wraps it on its visible width; markup tags
+	 * and multibyte characters don't count. `$max` caps the wrapped
+	 * width, excluding the indent.
+	 */
 	public function indent(
 		string $text,
 		int $indent,
@@ -164,9 +169,49 @@ class Io
 			$width = $max;
 		}
 
-		$lines = explode("\n", wordwrap($text, $width, break: "\n"));
+		$lines = [];
 
-		return implode("\n", array_map(static fn($line) => $spaces . $line, $lines));
+		foreach (explode("\n", $text) as $line) {
+			foreach ($this->wrap($line, $width) as $wrapped) {
+				$lines[] = $wrapped === '' ? '' : $spaces . $wrapped;
+			}
+		}
+
+		return implode("\n", $lines);
+	}
+
+	/**
+	 * Wraps one line at spaces; a word longer than the width overflows.
+	 *
+	 * @return list<string>
+	 */
+	private function wrap(string $line, int $width): array
+	{
+		$lines = [];
+		$current = null;
+		$currentWidth = 0;
+
+		foreach (explode(' ', $line) as $word) {
+			$wordWidth = $this->markup->width($word);
+
+			if ($current !== null && ($currentWidth + 1 + $wordWidth) <= $width) {
+				$current .= ' ' . $word;
+				$currentWidth += 1 + $wordWidth;
+
+				continue;
+			}
+
+			if ($current !== null) {
+				$lines[] = $current;
+			}
+
+			$current = $word;
+			$currentWidth = $wordWidth;
+		}
+
+		$lines[] = (string) $current;
+
+		return $lines;
 	}
 
 	private function terminalWidth(): int

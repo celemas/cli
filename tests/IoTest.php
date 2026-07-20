@@ -150,6 +150,44 @@ class IoTest extends TestCase
 		$this->assertSame('    At vero eos et accusam et justo duo', $split[4]);
 	}
 
+	public function testIndentWrapsOnTheVisibleMarkupWidth(): void
+	{
+		$io = new Io('php://output');
+
+		$this->assertSame(
+			'    <green>aaa</green> bbb ccc',
+			$io->indent('<green>aaa</green> bbb ccc', 4, 12),
+		);
+	}
+
+	public function testIndentWrapsOnTheVisibleMultibyteWidth(): void
+	{
+		$io = new Io('php://output');
+
+		$this->assertSame(
+			"    Übersicht über\n    die",
+			$io->indent('Übersicht über die', 4, 14),
+		);
+	}
+
+	public function testIndentKeepsBlankLinesEmpty(): void
+	{
+		$io = new Io('php://output');
+
+		$this->assertSame("    a\n\n    b", $io->indent("a\n\nb", 4, 40));
+		$this->assertSame('', $io->indent('', 4, 40));
+	}
+
+	public function testIndentOverflowsLongWords(): void
+	{
+		$io = new Io('php://output');
+
+		$this->assertSame(
+			"    overlong-word\n    x",
+			$io->indent('overlong-word x', 4, 8),
+		);
+	}
+
 	public function testIndentUsesColumnsEnvAndCaches(): void
 	{
 		putenv('COLUMNS=40');

@@ -30,6 +30,7 @@
 
 ### Changed
 
+- `Io::indent()` wraps on the visible width: markup tags and multibyte characters no longer count toward the line width (the package now requires `ext-mbstring`), and blank lines are no longer padded with the indent. The command help omits the description line for an argument or option without a description.
 - Color support is decided per stream instead of once against `STDOUT`: the error helpers check the error stream, so redirecting one stream no longer discolors the other or writes escape codes into a redirected file.
 - `NO_COLOR` and `FORCE_COLOR` follow the common conventions: an empty `NO_COLOR` is ignored, and `FORCE_COLOR=0` or `FORCE_COLOR=false` disables colors instead of forcing them on.
 

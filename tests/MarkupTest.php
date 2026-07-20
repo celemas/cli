@@ -157,6 +157,17 @@ class MarkupTest extends TestCase
 		$this->assertSame('<foo> stays', $markup->escape('<foo> stays'));
 	}
 
+	public function testWidthCountsOnlyVisibleCharacters(): void
+	{
+		$markup = new Markup();
+
+		$this->assertSame(3, $markup->width('abc'));
+		$this->assertSame(3, $markup->width('<green>abc</green>'));
+		$this->assertSame(7, $markup->width('\<green>'));
+		$this->assertSame(9, $markup->width('Übersicht'));
+		$this->assertSame(5, $markup->width('<foo>'));
+	}
+
 	public function testEscapedTextRendersAsItsInput(): void
 	{
 		$markup = new Markup();

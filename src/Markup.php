@@ -158,4 +158,21 @@ final class Markup
 	{
 		return (string) preg_replace($this->split, replacement: '\\\\$0', subject: $text);
 	}
+
+	/**
+	 * The visible width of the text: tags collapse to nothing, an
+	 * escaped tag to the tag without its backslash.
+	 */
+	public function width(string $text): int
+	{
+		if (str_contains($text, '<')) {
+			$text = (string) preg_replace_callback(
+				$this->split,
+				static fn(array $match): string => $match[0][0] === '\\' ? substr($match[0], offset: 1) : '',
+				$text,
+			);
+		}
+
+		return mb_strwidth($text);
+	}
 }

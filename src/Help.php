@@ -55,7 +55,10 @@ final class Help
 		foreach ($arguments as $argument) {
 			$name = $this->io->escape("<{$argument->name}>");
 			$this->io->echo("    <green>{$name}</green>\n");
-			$this->io->echo($this->io->indent($argument->description, 8, 80) . "\n");
+
+			if ($argument->description !== '') {
+				$this->io->echo($this->io->indent($argument->description, 8, 80) . "\n");
+			}
 		}
 	}
 
@@ -84,7 +87,10 @@ final class Help
 				: "{$opt->description} [default: {$opt->default}]";
 
 			$this->io->echo('    <green>' . $this->io->escape($option) . "</green>\n");
-			$this->io->echo($this->io->indent($description, 8, 80) . "\n");
+
+			if ($description !== '') {
+				$this->io->echo($this->io->indent($description, 8, 80) . "\n");
+			}
 		}
 	}
 

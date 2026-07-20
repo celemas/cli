@@ -25,7 +25,8 @@
 		}
 	},
 	"require": {
-		"php": "^8.5"
+		"php": "^8.5",
+		"ext-mbstring": "*"
 	},
 	"require-dev": {
 		"celema/dev": "^5.0"
