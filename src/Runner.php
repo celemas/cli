@@ -346,6 +346,14 @@ final class Runner
 		$declared = [];
 
 		foreach ($opts as $opt) {
+			if (isset($declared[$opt->long]) || $opt->short !== '' && isset($declared[$opt->short])) {
+				$name = isset($declared[$opt->long]) ? $opt->long : $opt->short;
+
+				throw new ValueError(
+					"Command '{$entry->meta->full()}' declares the option name '{$name}' twice",
+				);
+			}
+
 			$declared[$opt->long] = $opt;
 
 			if ($opt->short !== '') {

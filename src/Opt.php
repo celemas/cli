@@ -7,6 +7,7 @@ namespace Celema\Console;
 use Attribute;
 use ReflectionAttribute;
 use ReflectionClass;
+use ValueError;
 
 /**
  * Describes one option of a command in its help output.
@@ -32,7 +33,19 @@ final class Opt
 		public readonly string $value = '',
 		public readonly bool $optionalValue = false,
 		public readonly string $default = '',
-	) {}
+	) {
+		if (preg_match('/^--[^-=\s][^=\s]*$/', $long) !== 1) {
+			throw new ValueError("Invalid option name '{$long}'");
+		}
+
+		if ($short !== '' && preg_match('/^-[^-=\s][^=\s]*$/', $short) !== 1) {
+			throw new ValueError("Invalid short option name '{$short}'");
+		}
+
+		if ($optionalValue && $value === '') {
+			throw new ValueError("Option '{$long}' declares an optional value without a value label");
+		}
+	}
 
 	/**
 	 * Reads all option attributes off a command instance or class.

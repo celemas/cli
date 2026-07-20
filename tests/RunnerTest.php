@@ -238,6 +238,46 @@ class RunnerTest extends TestCase
 		);
 	}
 
+	public function testRejectDuplicateOptionName(): void
+	{
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Duplicate option')]
+			#[Opt('--force', 'First')]
+			#[Opt('--force', 'Second')]
+			class {
+				public function __invoke(): int
+				{
+					return 0;
+				}
+			});
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'probe' declares the option name '--force' twice",
+			$out->errorOutput(),
+		);
+	}
+
+	public function testRejectDuplicateShortAlias(): void
+	{
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Duplicate alias')]
+			#[Opt('--alpha', 'First', short: '-x')]
+			#[Opt('--beta', 'Second', short: '-x')]
+			class {
+				public function __invoke(): int
+				{
+					return 0;
+				}
+			});
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'probe' declares the option name '-x' twice",
+			$out->errorOutput(),
+		);
+	}
+
 	public function testRejectUndeclaredOption(): void
 	{
 		$_SERVER['argv'] = ['run', 'plain', '--whatever'];
