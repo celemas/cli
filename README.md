@@ -27,7 +27,6 @@ A command line interface helper.
 - `BufferedIo` for testing commands without output buffering or escape-code stripping
 - Text indentation and wrapping with `indent()`
 - Debug mode for detailed error traces
-- 100% test coverage
 
 ## Installation
 
