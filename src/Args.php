@@ -12,7 +12,9 @@ namespace Celema\Console;
  * token is a positional. Unlike PHP's native `getopt`, this reads an
  * explicit token list, so the command name never interferes with parsing.
  *
- * A positional cannot start with `-`; such a token is read as a flag.
+ * A positional cannot start with `-`; such a token is read as a flag —
+ * unless it follows a `--` separator: the first `--` ends option parsing
+ * and every later token is a positional, dashed or not.
  *
  * @api
  */
@@ -29,9 +31,19 @@ final class Args
 	 */
 	public function __construct(array $tokens = [])
 	{
+		$literal = false;
+
 		foreach ($tokens as $token) {
-			if (!str_starts_with($token, '-')) {
+			if ($literal || !str_starts_with($token, '-')) {
 				$this->positionals[] = $token;
+
+				continue;
+			}
+
+			// The token is command-line input, not a secret.
+			// @mago-expect lint:no-insecure-comparison
+			if ($token === '--') {
+				$literal = true;
 
 				continue;
 			}

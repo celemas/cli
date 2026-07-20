@@ -231,8 +231,20 @@ final class Runner
 		}
 
 		$normalized = [];
+		$literal = false;
 
 		foreach ($tokens as $token) {
+			// Aliasing stops at the `--` separator; Args reads every
+			// later token as a positional. The token is command-line
+			// input, not a secret.
+			// @mago-expect lint:no-insecure-comparison
+			if ($literal || $token === '--') {
+				$literal = true;
+				$normalized[] = $token;
+
+				continue;
+			}
+
 			$separator = strpos(haystack: $token, needle: '=');
 			$name = $separator === false
 				? $token

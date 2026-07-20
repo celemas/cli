@@ -166,6 +166,7 @@ php run mycommand up --conn=sqlite --force
 - `--key=value` sets an option; repeat the flag to collect multiple values.
 - A dashed token without `=`, such as `--force` or `-h`, is a boolean flag.
 - Every other token is a positional argument.
+- The first `--` ends option parsing: every later token is a positional, dashed or not — for values like `-5` or `--literal`.
 
 ```php
 $args->positional(0);            // "up" (or null / a default)

@@ -110,6 +110,24 @@ class RunnerTest extends TestCase
 		$this->assertSame('', $errors);
 	}
 
+	public function testSeparatorSkipsOptionValidation(): void
+	{
+		[$code, $errors] = $this->runVariants('file.txt', '--', '--verbos');
+
+		$this->assertSame(0, $code);
+		$this->assertSame('', $errors);
+	}
+
+	public function testSeparatorStopsShortOptionNormalization(): void
+	{
+		$_SERVER['argv'] = ['run', 'aliases', '-v', '--', '-w=b'];
+		$out = new BufferedIo();
+		$code = new Runner(new Commands(new OptionAliases()), $out)->run();
+
+		$this->assertSame(0, $code);
+		$this->assertSame('[true,false,[],[]]', $out->output());
+	}
+
 	public function testRejectMissingRequiredArgument(): void
 	{
 		[$code, $errors] = $this->runVariants();

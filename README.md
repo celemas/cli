@@ -21,7 +21,7 @@ A command line interface helper.
 - Built-in color support with per-stream terminal detection and `NO_COLOR`/`FORCE_COLOR` handling
 - Command help with `php run help <command>`
 - Built-in `commands` command for shell autocomplete
-- `--key=value` options (repeatable) and boolean `--flag` / `-h` flags
+- `--key=value` options (repeatable) and boolean `--flag` / `-h` flags; `--` ends option parsing
 - Io helpers for output: `info()`, `success()`, `warn()`, `error()`, `echoln()` (warnings and errors go to STDERR)
 - Inline markup for styled output: `<strong>`, `<em>`, `<dim>`, `<u>` and the ANSI colors — `<green>`, `<bright-red>`, `<bg-blue>`, ...
 - Interactive prompts: `ask()` (optionally with hidden input) and `confirm()`

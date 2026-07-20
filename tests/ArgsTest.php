@@ -54,6 +54,16 @@ class ArgsTest extends TestCase
 		$this->assertSame('sqlite', $args->opt('--conn'));
 	}
 
+	public function testSeparatorEndsOptionParsing(): void
+	{
+		$args = new Args(['up', '--tag=a', '--', '--tag=b', '-v', '--']);
+
+		$this->assertSame(['a'], $args->opts('--tag'));
+		$this->assertFalse($args->has('-v'));
+		// The first separator is consumed; a later one is a positional.
+		$this->assertSame(['up', '--tag=b', '-v', '--'], $args->positionals());
+	}
+
 	public function testDefaultsForMissingKeys(): void
 	{
 		$args = new Args([]);
