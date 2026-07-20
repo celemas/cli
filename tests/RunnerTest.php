@@ -423,6 +423,16 @@ class RunnerTest extends TestCase
 		$runner->run();
 	}
 
+	public function testHelpForUnknownCommandNamesTheTarget(): void
+	{
+		$_SERVER['argv'] = ['run', 'help', 'missing'];
+		$out = new BufferedIo();
+		$code = new Runner(new Commands([new HelpVariants()]), $out)->run();
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString("Error while running command 'missing'", $out->errorOutput());
+	}
+
 	public function testRunUnknownCommand(): void
 	{
 		$_SERVER['argv'] = ['run', 'unknown'];

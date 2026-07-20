@@ -11,6 +11,7 @@
 ### Fixed
 
 - Command resolution looks up exact full names before bare-name aliases: an unprefixed command now wins over a prefixed namesake instead of becoming unreachable behind a bogus ambiguity (whose message suggested the invalid `:name` form), and it shows in the `commands` listing again.
+- `help <unknown>` reports the unknown target instead of blaming the `help` command itself.
 
 ### Added
 

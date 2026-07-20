@@ -203,9 +203,10 @@ final class Runner
 			return $this->runCommand($entry, $args);
 		} catch (Throwable $e) {
 			// Escape the arbitrary strings: a message containing markup
-			// (or broken markup) must never throw while reporting.
+			// (or broken markup) must never throw while reporting. `$arg`
+			// names the effective target, e.g. `x` for `help x`.
 			$this->io->echoErr("Error while running command '");
-			$this->io->echoErr($this->io->escape($_SERVER['argv'][1] ?? '<no command given>'));
+			$this->io->echoErr($this->io->escape($arg ?? '<no command given>'));
 			$this->io->echoErr("':\n\n" . $this->io->escape($e->getMessage()) . "\n");
 
 			if ($this->debug) {
