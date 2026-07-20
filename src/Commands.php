@@ -11,17 +11,21 @@ use ValueError;
  * Collects command registrations.
  *
  * Accepts command instances, class-strings of zero-argument constructible
- * commands, lazy factories keyed by class-string, and named closures:
+ * commands, and lazy factories keyed by class-string:
  *
  *     $commands = new Commands([
  *         new Greet($translator),
  *         Simple::class,
  *         Expensive::class => fn() => new Expensive($db),
  *     ]);
- *     $commands->add('cache:clear', 'Clears the cache', fn(Args $args, Io $io): int => ...);
  *
- * Class-based commands carry their metadata in a #[Command] attribute;
- * named closures get theirs from the add() arguments.
+ * Commands carry their metadata in a #[Command] attribute. For a
+ * lightweight one-off, register an anonymous class — attributes work
+ * inline:
+ *
+ *     $commands->add(new #[Command('cache:clear', 'Clears the cache')] class {
+ *         public function __invoke(Io $io): int { ... }
+ *     });
  *
  * @api
  */
@@ -35,19 +39,12 @@ final class Commands
 		$this->add($commands);
 	}
 
-	public function add(
-		array|object|string $commands,
-		string $description = '',
-		?Closure $command = null,
-	): void {
-		if ($command !== null) {
-			if (!is_string($commands)) {
-				throw new ValueError('A closure command requires a name');
-			}
-
-			$this->entries[] = Entry::fromClosure($commands, $description, $command);
-
-			return;
+	public function add(array|object|string $commands): void
+	{
+		if ($commands instanceof Closure) {
+			throw new ValueError(
+				'Closure commands are not supported; use an anonymous class with a #[Command] attribute',
+			);
 		}
 
 		if ($commands instanceof Commands) {
@@ -68,10 +65,6 @@ final class Commands
 			$this->entries[] = Entry::fromClass($this->validClass($commands));
 
 			return;
-		}
-
-		if ($commands instanceof Closure) {
-			throw new ValueError('A closure command requires a name and description');
 		}
 
 		$this->entries[] = Entry::fromInstance($commands);

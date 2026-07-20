@@ -17,7 +17,7 @@ A command line interface helper.
 - Declared options and arguments are validated: an unknown or malformed option (with a "Did you mean" suggestion), a missing required argument, or a surplus positional aborts before the command runs
 - Parsed options and positional arguments via an injected `Args` object
 - Lazy command construction: factories run only for the invoked command
-- Closures as lightweight one-off commands
+- Anonymous classes as lightweight one-off commands — attributes work inline
 - Built-in color support with per-stream terminal detection and `NO_COLOR`/`FORCE_COLOR` handling
 - Command help with `php run help <command>`
 - Built-in `commands` command for shell autocomplete

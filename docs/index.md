@@ -62,10 +62,10 @@ The constructor is yours: take whatever dependencies the command needs and regis
 
 ### Registering Commands
 
-`Commands` accepts instances, class-strings, lazy factories, and named closures:
+`Commands` accepts instances, class-strings, and lazy factories:
 
 ```php
-use Celema\Console\{Args, Commands, Io};
+use Celema\Console\{Command, Commands, Io};
 
 $commands = new Commands([
     new MyCommand(),                          // instance
@@ -73,16 +73,19 @@ $commands = new Commands([
     Expensive::class => fn() => new Expensive($db), // lazy factory
 ]);
 
-// A closure as a lightweight one-off command
-$commands->add('cache:clear', 'Clears the cache', function (Args $args, Io $io): int {
-    // ...
-    return 0;
+// An anonymous class as a lightweight one-off command — attributes,
+// validation, and the help screen work exactly as for named classes.
+$commands->add(new #[Command('cache:clear', 'Clears the cache')] class {
+    public function __invoke(Io $io): int {
+        // ...
+        return 0;
+    }
 });
 ```
 
-Class-based commands carry their metadata in the `#[Command]` attribute, which is read without instantiating the class. Factories run only when their command is actually invoked — listing the help never constructs a command.
+Commands carry their metadata in the `#[Command]` attribute, which is read without instantiating the class. Factories run only when their command is actually invoked — listing the help never constructs a command.
 
-The runner validates the signature of the invoked command: `__invoke()` (or the closure) must declare the return type `int` — the exit code — and may declare any subset of `Args` and `Io` parameters in any order. They are matched by declared type, and no other parameters are allowed.
+The runner validates the signature of the invoked command: `__invoke()` must declare the return type `int` — the exit code — and may declare any subset of `Args` and `Io` parameters in any order. They are matched by declared type, and no other parameters are allowed.
 
 ### Io Methods
 
@@ -183,7 +186,7 @@ A positional cannot start with `-` — such a token is read as a flag. When `#[O
 
 For a command class that declares `#[Opt]` attributes, the runner validates the provided options before the command runs: an unknown option (with a "Did you mean" suggestion for near misses), a value on a boolean flag, or a value-taking option without `=value` aborts with exit code 1. So a typo like `--forec` fails loudly instead of being silently ignored.
 
-Commands declaring no options — including closures — accept arbitrary options and read them from `Args` unchecked.
+Commands declaring no options accept arbitrary options and read them from `Args` unchecked.
 
 ### Command Help
 

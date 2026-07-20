@@ -2,7 +2,9 @@
 
 ## [Unreleased](https://codeberg.org/celema/console/compare/0.4.0...HEAD)
 
-No notable changes since the last release.
+### Breaking Changes
+
+- Removed closure commands: `Commands::add()` no longer takes a name, description, and closure. Register an anonymous class instead — attributes work inline, so one-off commands gain declared options and arguments, validation, short-option normalization, and a full help screen, none of which closures had: `$commands->add(new #[Command('cache:clear', 'Clears the cache')] class { public function __invoke(Io $io): int { ... } });`
 
 ## [0.4.0](https://codeberg.org/celema/console/src/tag/0.4.0) (2026-07-20)
 

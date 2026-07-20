@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Celema\Console\Tests;
 
-use Celema\Console\Args;
+use Celema\Console\Command;
 use Celema\Console\Commands;
-use Celema\Console\Io;
 use Celema\Console\Tests\Fixtures\BarStuff;
 use Celema\Console\Tests\Fixtures\FooStuff;
 use Celema\Console\Tests\Fixtures\Greet;
@@ -95,10 +94,17 @@ class CommandsTest extends TestCase
 		$this->assertTrue($called);
 	}
 
-	public function testAddNamedClosure(): void
+	public function testAddAnonymousClassCommand(): void
 	{
 		$commands = new Commands();
-		$commands->add('cache:clear', 'Clears the cache', static fn(Args $args, Io $out): int => 0);
+		$commands->add(new
+			#[Command('cache:clear', 'Clears the cache')]
+			class {
+				public function __invoke(): int
+				{
+					return 0;
+				}
+			});
 		$entry = $commands->entries()[0];
 
 		$this->assertSame('cache:clear', $entry->meta->full());
@@ -130,22 +136,20 @@ class CommandsTest extends TestCase
 		new Commands([Greet::class => new Greet()]);
 	}
 
-	public function testAddBareClosureFails(): void
+	public function testAddClosureFails(): void
 	{
 		$this->expectException(ValueError::class);
-		$this->expectExceptionMessage('requires a name and description');
+		$this->expectExceptionMessage('Closure commands are not supported');
 
-		new Commands(static fn(Args $args, Io $out): int => 0);
+		new Commands(static fn(): int => 0);
 	}
 
-	public function testAddClosureWithoutNameFails(): void
+	public function testAddClosureInArrayFails(): void
 	{
-		$commands = new Commands();
-
 		$this->expectException(ValueError::class);
-		$this->expectExceptionMessage('requires a name');
+		$this->expectExceptionMessage('Closure commands are not supported');
 
-		$commands->add([], command: static fn(Args $args, Io $out): int => 0);
+		new Commands([static fn(): int => 0]);
 	}
 
 	public function testAddInvalidItemFails(): void

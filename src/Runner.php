@@ -329,8 +329,7 @@ final class Runner
 	 * and the positionals against its `#[Arg]`s.
 	 *
 	 * Declaring no options accepts any options, declaring no arguments any
-	 * positionals — so leave `#[Arg]`s undeclared for variadic input;
-	 * closures always accept both.
+	 * positionals — so leave `#[Arg]`s undeclared for variadic input.
 	 */
 	private function validate(Entry $entry, Args $args): void
 	{

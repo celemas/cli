@@ -6,26 +6,24 @@ namespace Celema\Console\Tests;
 
 use Celema\Console\Args;
 use Celema\Console\BufferedIo;
+use Celema\Console\Command;
 use Celema\Console\Commands;
 use Celema\Console\Io;
 use Celema\Console\Runner;
 use Celema\Console\Tests\Fixtures\Greet;
 use Celema\Console\Tests\Fixtures\HelpVariants;
 use Celema\Console\Tests\Fixtures\OptionAliases;
-use Closure;
 use ValueError;
 
 class RunnerTest extends TestCase
 {
 	/** @return array{int, BufferedIo} */
-	private function runClosure(Closure $command, string ...$args): array
+	private function runProbe(object $command, string ...$args): array
 	{
 		$_SERVER['argv'] = ['run', 'probe', ...$args];
-		$commands = new Commands();
-		$commands->add('probe', 'Signature probe', $command);
 		$out = new BufferedIo();
 
-		return [new Runner($commands, $out)->run(), $out];
+		return [new Runner(new Commands([$command]), $out)->run(), $out];
 	}
 
 	private function runVariants(string ...$args): array
@@ -177,8 +175,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectHelpCommandRegistration(): void
 	{
-		$commands = new Commands();
-		$commands->add('help', 'User help', static fn(Args $args, Io $io): int => 0);
+		$commands = new Commands([new
+			#[Command('help', 'User help')]
+			class {
+				public function __invoke(): int
+				{
+					return 0;
+				}
+			}]);
 
 		$this->expectException(ValueError::class);
 		$this->expectExceptionMessage("Command name 'help' is reserved");
@@ -188,8 +192,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectCommandsCommandRegistration(): void
 	{
-		$commands = new Commands();
-		$commands->add('commands', 'User command list', static fn(Args $args, Io $io): int => 0);
+		$commands = new Commands([new
+			#[Command('commands', 'User command list')]
+			class {
+				public function __invoke(): int
+				{
+					return 0;
+				}
+			}]);
 
 		$this->expectException(ValueError::class);
 		$this->expectExceptionMessage("Command name 'commands' is reserved");
@@ -351,14 +361,14 @@ class RunnerTest extends TestCase
 	public function testCommandValueErrorIsNotTreatedAsAmbiguous(): void
 	{
 		$_SERVER['argv'] = ['run', 'boom'];
-		$commands = new Commands();
-		$commands->add(
-			'boom',
-			'Fails with a ValueError',
-			static function (Args $args, Io $io): int {
-				throw new ValueError('Command failure', 1);
-			},
-		);
+		$commands = new Commands([new
+			#[Command('boom', 'Fails with a ValueError')]
+			class {
+				public function __invoke(): int
+				{
+					throw new ValueError('Command failure', 1);
+				}
+			}]);
 		$out = new BufferedIo();
 		$code = new Runner($commands, $out)->run();
 
@@ -413,11 +423,16 @@ class RunnerTest extends TestCase
 
 	public function testCommandWithIoParameterOnly(): void
 	{
-		[$code, $out] = $this->runClosure(static function (Io $io): int {
-			$io->echo('io only');
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(Io $io): int
+				{
+					$io->echo('io only');
 
-			return 0;
-		});
+					return 0;
+				}
+			});
 
 		$this->assertSame(0, $code);
 		$this->assertSame('io only', $out->output());
@@ -425,31 +440,50 @@ class RunnerTest extends TestCase
 
 	public function testCommandWithArgsParameterOnly(): void
 	{
-		$seen = '';
-		[$code] = $this->runClosure(static function (Args $args) use (&$seen): int {
-			$seen = (string) $args->positional(0);
+		$command = new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public string $seen = '';
 
-			return 0;
-		}, 'now');
+				public function __invoke(Args $args): int
+				{
+					$this->seen = (string) $args->positional(0);
+
+					return 0;
+				}
+			};
+		[$code] = $this->runProbe($command, 'now');
 
 		$this->assertSame(0, $code);
-		$this->assertSame('now', $seen);
+		$this->assertSame('now', $command->seen);
 	}
 
 	public function testCommandWithoutParameters(): void
 	{
-		[$code] = $this->runClosure(static fn(): int => 3);
+		[$code] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(): int
+				{
+					return 3;
+				}
+			});
 
 		$this->assertSame(3, $code);
 	}
 
 	public function testCommandWithSwappedParameters(): void
 	{
-		[$code, $out] = $this->runClosure(static function (Io $io, Args $args): int {
-			$io->echo('swapped ' . (string) $args->positional(0));
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(Io $io, Args $args): int
+				{
+					$io->echo('swapped ' . (string) $args->positional(0));
 
-			return 0;
-		}, 'now');
+					return 0;
+				}
+			}, 'now');
 
 		$this->assertSame(0, $code);
 		$this->assertSame('swapped now', $out->output());
@@ -457,7 +491,15 @@ class RunnerTest extends TestCase
 
 	public function testRejectUntypedParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn($args, Io $io): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				/** @param mixed $args */
+				public function __invoke($args, Io $io): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -468,7 +510,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectForeignParameterType(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(string $name): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(string $name): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -479,7 +528,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectIoSubclassParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(BufferedIo $io): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(BufferedIo $io): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -490,7 +546,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectNullableParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(?Args $args): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(?Args $args): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -501,7 +564,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectUnionParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Args|Io $io): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(Args|Io $io): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -512,7 +582,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectVariadicParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Io ...$io): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(Io ...$io): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -523,7 +600,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectDuplicateArgsParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Args $a, Args $b): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(Args $a, Args $b): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -534,7 +618,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectDuplicateIoParameter(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Io $a, Io $b): int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(Io $a, Io $b): int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -545,7 +636,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectNonIntReturnType(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io): bool => false);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(): bool
+				{
+					return false;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -556,7 +654,15 @@ class RunnerTest extends TestCase
 
 	public function testRejectMissingReturnType(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io) => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				/** @return int */
+				public function __invoke()
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -567,7 +673,11 @@ class RunnerTest extends TestCase
 
 	public function testRejectVoidReturnType(): void
 	{
-		[$code, $out] = $this->runClosure(static function (Args $args, Io $io): void {});
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(): void {}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -578,7 +688,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectNullableReturnType(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io): ?int => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(): ?int
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -589,7 +706,14 @@ class RunnerTest extends TestCase
 
 	public function testRejectUnionReturnType(): void
 	{
-		[$code, $out] = $this->runClosure(static fn(Args $args, Io $io): int|string => 0);
+		[$code, $out] = $this->runProbe(new
+			#[Command('probe', 'Signature probe')]
+			class {
+				public function __invoke(): int|string
+				{
+					return 0;
+				}
+			});
 
 		$this->assertSame(1, $code);
 		$this->assertStringContainsString(
@@ -654,19 +778,19 @@ class RunnerTest extends TestCase
 		$runner->run();
 	}
 
-	public function testRunNamedClosureCommand(): void
+	public function testRunAnonymousClassCommand(): void
 	{
 		$_SERVER['argv'] = ['run', 'cache:clear', 'now'];
-		$commands = new Commands();
-		$commands->add(
-			'cache:clear',
-			'Clears the cache',
-			static function (Args $args, Io $out): int {
-				$out->echo('cleared ' . (string) $args->positional(0));
+		$commands = new Commands([new
+			#[Command('cache:clear', 'Clears the cache')]
+			class {
+				public function __invoke(Args $args, Io $out): int
+				{
+					$out->echo('cleared ' . (string) $args->positional(0));
 
-				return 0;
-			},
-		);
+					return 0;
+				}
+			}]);
 		$runner = new Runner($commands);
 
 		ob_start();
@@ -677,11 +801,17 @@ class RunnerTest extends TestCase
 		$this->assertSame('cleared now', $stdout);
 	}
 
-	public function testClosureCommandAppearsInHelp(): void
+	public function testAnonymousClassCommandAppearsInHelp(): void
 	{
 		$_SERVER['argv'] = ['run'];
-		$commands = new Commands();
-		$commands->add('cache:clear', 'Clears the cache', static fn(Args $args, Io $out): int => 0);
+		$commands = new Commands([new
+			#[Command('cache:clear', 'Clears the cache')]
+			class {
+				public function __invoke(): int
+				{
+					return 0;
+				}
+			}]);
 		$runner = new Runner($commands);
 
 		$this->expectOutputRegex('/Cache.*cache:.*clear.*Clears the cache/s');
