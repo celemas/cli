@@ -40,7 +40,7 @@ class MyCommand
         // Read options and positionals from the injected Args
         $name = $args->positional(0, 'world');   // first positional, or default
         $conn = $args->opt('--conn', 'sqlite');  // --conn=value, or default
-        $force = $args->has('--force');          // boolean flag
+        $verbose = $args->has('--verbose');      // boolean flag
 
         // Output helpers with color support (warn/error go to STDERR)
         $io->info('Informational message');
@@ -163,11 +163,11 @@ Whether codes are actually emitted is decided per stream: a non-empty `NO_COLOR`
 The Runner parses the command's arguments and passes them to `__invoke(Args $args, Io $io)`:
 
 ```bash
-php run mycommand up --conn=sqlite --force
+php run mycommand up --conn=sqlite --verbose
 ```
 
 - `--key=value` sets an option; repeat the flag to collect multiple values.
-- A dashed token without `=`, such as `--force` or `-h`, is a boolean flag.
+- A dashed token without `=`, such as `--verbose` or `-h`, is a boolean flag.
 - Every other token is a positional argument.
 - The first `--` ends option parsing: every later token is a positional, dashed or not — for values like `-5` or `--literal`.
 
@@ -176,7 +176,7 @@ $args->positional(0);            // "up" (or null / a default)
 $args->positionals();            // ["up"]
 $args->opt('--conn', 'pgsql');   // "sqlite" (or the default)
 $args->opts('--tag');            // all values for a repeated option
-$args->has('--force');           // true
+$args->has('--verbose');         // true
 $args->names();                  // names of all provided options
 ```
 
