@@ -154,8 +154,8 @@ class Io
 
 	/**
 	 * Indents the text and wraps it on its visible width; markup tags
-	 * and multibyte characters don't count. `$max` caps the wrapped
-	 * width, excluding the indent.
+	 * and multibyte characters don't count. `$max` caps the total line
+	 * width: the text wraps as if the terminal were at most that wide.
 	 */
 	public function indent(
 		string $text,
@@ -163,11 +163,13 @@ class Io
 		?int $max = null,
 	): string {
 		$spaces = str_repeat(' ', $indent);
-		$width = $this->terminalWidth() - $indent;
+		$terminal = $this->terminalWidth();
 
-		if ($max !== null && $max < $width) {
-			$width = $max;
+		if ($max !== null && $max < $terminal) {
+			$terminal = $max;
 		}
+
+		$width = $terminal - $indent;
 
 		$lines = [];
 

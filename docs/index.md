@@ -93,7 +93,7 @@ The runner validates the signature of the invoked command: `__invoke()` (or the 
 - `warn(string $message)` - Output a warning message (yellow, to STDERR)
 - `error(string $message)` - Output an error message (red, to STDERR)
 - `escape(string $text)` - Escape markup tags so the text prints literally
-- `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text on its visible width; `max` caps the wrapped width, excluding the indent
+- `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text on its visible width; `max` caps the total line width, indent included
 
 The constructor takes the output, error, and input targets (`php://output`, `php://stderr`, and `php://stdin` by default). A target that cannot be opened raises a `RuntimeException` on first use.
 

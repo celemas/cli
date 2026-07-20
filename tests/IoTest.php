@@ -146,8 +146,8 @@ class IoTest extends TestCase
 			. 'ipsum dolor sit amet.';
 		$split = explode("\n", $io->indent($lorem, 4, 40));
 
-		$this->assertSame('    Lorem ipsum dolor sit amet, consetetur', $split[0]);
-		$this->assertSame('    At vero eos et accusam et justo duo', $split[4]);
+		$this->assertSame('    Lorem ipsum dolor sit amet,', $split[0]);
+		$this->assertSame('    erat, sed diam voluptua. At vero eos', $split[4]);
 	}
 
 	public function testIndentWrapsOnTheVisibleMarkupWidth(): void
@@ -156,7 +156,7 @@ class IoTest extends TestCase
 
 		$this->assertSame(
 			'    <green>aaa</green> bbb ccc',
-			$io->indent('<green>aaa</green> bbb ccc', 4, 12),
+			$io->indent('<green>aaa</green> bbb ccc', 4, 15),
 		);
 	}
 
@@ -166,7 +166,7 @@ class IoTest extends TestCase
 
 		$this->assertSame(
 			"    Übersicht über\n    die",
-			$io->indent('Übersicht über die', 4, 14),
+			$io->indent('Übersicht über die', 4, 18),
 		);
 	}
 
