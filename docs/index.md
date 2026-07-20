@@ -23,8 +23,10 @@ use Celema\Console\{Arg, Args, Command, Opt, Io};
 #[Command('grp:mycommand', 'This is my command description', group: 'My Group')]
 // Optional: each #[Arg] describes one positional argument and each #[Opt]
 // one option in the command's help text (e.g. `php run help mycommand`).
-// Declared options are also validated: an unknown or malformed option
-// aborts the command before it runs.
+// Declared options and arguments are also validated: an unknown or
+// malformed option, a missing required argument, or a surplus positional
+// aborts the command before it runs. Declaring no #[Arg]s accepts any
+// positionals, so leave them undeclared for variadic input.
 #[Arg('name', 'Who to greet', optional: true)]
 #[Opt('--stuff', 'Description of --stuff', short: '-s', value: 'stuff')]
 #[Opt('--conn', 'The database connection', value: 'conn', default: 'sqlite')]

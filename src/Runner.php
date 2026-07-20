@@ -313,11 +313,20 @@ final class Runner
 	}
 
 	/**
-	 * Checks the provided options against the command's declared `#[Opt]`s.
+	 * Checks the provided options against the command's declared `#[Opt]`s
+	 * and the positionals against its `#[Arg]`s.
 	 *
-	 * A command declaring no options accepts anything; closures always do.
+	 * Declaring no options accepts any options, declaring no arguments any
+	 * positionals — so leave `#[Arg]`s undeclared for variadic input;
+	 * closures always accept both.
 	 */
 	private function validate(Entry $entry, Args $args): void
+	{
+		$this->validateOptions($entry, $args);
+		$this->validateArguments($entry, $args);
+	}
+
+	private function validateOptions(Entry $entry, Args $args): void
 	{
 		$opts = $entry->opts();
 
@@ -351,6 +360,44 @@ final class Runner
 			if ($opt->value !== '' && !$opt->optionalValue && $values === []) {
 				throw new ValueError("Option '{$name}' requires a value: {$name}=<{$opt->value}>");
 			}
+		}
+	}
+
+	private function validateArguments(Entry $entry, Args $args): void
+	{
+		$declared = $entry->args();
+
+		if ($declared === []) {
+			return;
+		}
+
+		$required = 0;
+
+		foreach ($declared as $index => $arg) {
+			if ($arg->optional) {
+				continue;
+			}
+
+			// Required arguments must form a prefix of the declaration.
+			if ($index > $required) {
+				throw new ValueError(
+					"Command '{$entry->meta->full()}' declares the required argument "
+					. "'<{$arg->name}>' after an optional one",
+				);
+			}
+
+			$required++;
+		}
+
+		$positionals = $args->positionals();
+		$count = count($positionals);
+
+		if ($count < $required) {
+			throw new ValueError("Missing required argument '<{$declared[$count]->name}>'");
+		}
+
+		if ($count > count($declared)) {
+			throw new ValueError("Unexpected argument '{$positionals[count($declared)]}'");
 		}
 	}
 

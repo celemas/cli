@@ -104,10 +104,47 @@ class RunnerTest extends TestCase
 
 	public function testOptionalValueAcceptsAValue(): void
 	{
-		[$code, $errors] = $this->runVariants('--watch=src');
+		[$code, $errors] = $this->runVariants('--watch=src', 'file.txt');
 
 		$this->assertSame(0, $code);
 		$this->assertSame('', $errors);
+	}
+
+	public function testRejectMissingRequiredArgument(): void
+	{
+		[$code, $errors] = $this->runVariants();
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString("Missing required argument '<file>'", $errors);
+	}
+
+	public function testAcceptOmittedOptionalArgument(): void
+	{
+		[$code, $errors] = $this->runVariants('file.txt');
+
+		$this->assertSame(0, $code);
+		$this->assertSame('', $errors);
+	}
+
+	public function testRejectUnexpectedArgument(): void
+	{
+		[$code, $errors] = $this->runVariants('file.txt', 'target', 'extra');
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString("Unexpected argument 'extra'", $errors);
+	}
+
+	public function testRejectRequiredArgumentAfterOptional(): void
+	{
+		$_SERVER['argv'] = ['run', 'badargs', 'value'];
+		$out = new BufferedIo();
+		$code = new Runner(new Commands(Fixtures\BadArgOrder::class), $out)->run();
+
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString(
+			"Command 'badargs' declares the required argument '<second>' after an optional one",
+			$out->errorOutput(),
+		);
 	}
 
 	public function testCommandWithoutDeclaredOptionsAcceptsAnything(): void

@@ -14,7 +14,7 @@ A command line interface helper.
 
 - Commands are plain classes marked with a `#[Command]` attribute — no base class, free constructors
 - Automatic help generation from `#[Command]`, `#[Arg]`, and `#[Opt]` attributes
-- Declared options are validated: unknown or malformed options abort with a "Did you mean" suggestion
+- Declared options and arguments are validated: an unknown or malformed option (with a "Did you mean" suggestion), a missing required argument, or a surplus positional aborts before the command runs
 - Parsed options and positional arguments via an injected `Args` object
 - Lazy command construction: factories run only for the invoked command
 - Closures as lightweight one-off commands
