@@ -13,7 +13,12 @@ class IoTest extends TestCase
 {
 	protected function tearDown(): void
 	{
+		// Clear every mutated variable here so a failing assertion cannot
+		// leak state into later tests. COLORTERM is snapshot-restored in
+		// the one test that sets it.
 		putenv('COLUMNS');
+		putenv('NO_COLOR');
+		putenv('FORCE_COLOR');
 		parent::tearDown();
 	}
 
@@ -26,7 +31,6 @@ class IoTest extends TestCase
 		$out = (string) ob_get_clean();
 
 		$this->assertSame("\033[31mtest\033[0m", $out);
-		putenv('FORCE_COLOR');
 	}
 
 	public function testHasColorSupport(): void
@@ -41,8 +45,6 @@ class IoTest extends TestCase
 		$out = (string) ob_get_clean();
 
 		$this->assertSame("\033[31mtest\033[0mtest", $out);
-		putenv('NO_COLOR');
-		putenv('FORCE_COLOR');
 	}
 
 	public function testMarkupIsValidatedEvenWithColorsDisabled(): void
@@ -65,7 +67,6 @@ class IoTest extends TestCase
 		$out = (string) ob_get_clean();
 
 		$this->assertSame('testtest', $out);
-		putenv('FORCE_COLOR');
 	}
 
 	public function testEmptyNoColorIsIgnored(): void
@@ -78,8 +79,6 @@ class IoTest extends TestCase
 		$out = (string) ob_get_clean();
 
 		$this->assertSame("\033[31mtest\033[0m", $out);
-		putenv('NO_COLOR');
-		putenv('FORCE_COLOR');
 	}
 
 	public function testColorTermDoesNotColorRedirectedStreams(): void
@@ -226,7 +225,6 @@ class IoTest extends TestCase
 		$this->assertStringContainsString("\033[32msucceeded\033[0m\n", $result);
 		$this->assertStringContainsString("\033[33mwarning\033[0m\n", $result);
 		$this->assertStringContainsString("\033[31mfailed\033[0m\n", $result);
-		putenv('FORCE_COLOR');
 	}
 
 	public function testMessageHelperStreams(): void
@@ -247,7 +245,6 @@ class IoTest extends TestCase
 
 		$this->assertSame("information\nsucceeded\n", $stdout);
 		$this->assertSame("warning\nfailed\n", $contents);
-		putenv('NO_COLOR');
 	}
 
 	public function testErrorWritersTargetTheErrorStream(): void
