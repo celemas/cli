@@ -97,21 +97,24 @@ The runner validates the signature of the invoked command: `__invoke()` must dec
 - `success(string $message)` - Output a success message (green)
 - `warn(string $message)` - Output a warning message (yellow, to STDERR)
 - `error(string $message)` - Output an error message (red, to STDERR)
+- `choice(string $question, array $options, int $default = 1)` - Prompt to pick from a numbered list of options
 - `escape(string $text)` - Escape markup tags so the text prints literally
 - `rule(string $char = '─', ?int $max = null)` - Output a horizontal rule spanning the terminal width; `max` caps it. The char may be a multi-char pattern and carry markup — the repeat count uses its visible width: `$io->rule('<dim>─</dim>')` draws a dim line
+- `pad(string $text, int $width, Align $align = Align::Left)` - Pad the text with spaces to the visible width `width`; markup tags and multibyte characters don't count, wider text is returned unchanged. `Align::Left`, `Align::Right`, or `Align::Center`
 - `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text on its visible width; `max` caps the total line width, indent included
 
 The constructor takes the output, error, and input targets (`php://stdout`, `php://stderr`, and `php://stdin` by default). A target that cannot be opened raises a `RuntimeException` on first use. Tests that capture output via output buffering can pass `php://output` instead; note that color detection reports no terminal for it.
 
 ### Prompts
 
-`Io` also reads: `ask()` prompts for one line of input, `confirm()` for a yes/no answer.
+`Io` also reads: `ask()` prompts for one line of input, `confirm()` for a yes/no answer, `choice()` for one of a numbered list.
 
 ```php
 public function __invoke(Args $args, Io $io): int
 {
     $name = $io->ask('Migration name:', default: 'unnamed');
     $password = $io->ask('Password:', hidden: true);
+    $env = $io->choice('Environment?', ['dev', 'staging', 'prod'], default: 3);
 
     if (!$io->confirm('Apply the migrations?')) {
         return 1;
@@ -124,6 +127,7 @@ public function __invoke(Args $args, Io $io): int
 - An empty answer (or end of input) yields the default.
 - `hidden` disables terminal echo while typing — for passwords — and keeps the answer's whitespace; only the trailing newline is stripped. The previous terminal state is restored afterwards, also when reading fails. On Windows, or without a terminal (piped input, tests), the line is simply read as is, visibly.
 - `confirm()` renders the default as `[y/N]` or `[Y/n]`; an answer starting with `y`/`Y` means yes, an empty one means the default, anything else no.
+- `choice()` lists the options numbered from 1, prompts with the default number as `[1]`, and returns the chosen option (not its number). An answer that is no listed number asks again. A default out of range, or an empty option list, throws a `ValueError`.
 - The input stream is the third `Io` constructor argument, `php://stdin` by default.
 
 ### Testing Commands
@@ -159,6 +163,36 @@ $io->echoln('Made <strong>bold</strong>, <green>green</green>, and <u>underlined
 Tags compose by nesting, and the innermost tag wins on conflict. Only exact known tags are parsed: `<info@example.com>`, generics, and unknown names pass through untouched, so most text needs no escaping. For text that must print literally — say, user data or exception messages — use `$io->escape()`: it escapes known tags and strips control characters (keeping newlines and tabs), so untrusted text cannot inject terminal escape sequences. Broken markup (a mismatched, dangling, or unclosed tag) throws a `ValueError`, also when colors are disabled, so mistakes surface in tests. The message helpers `info()`, `success()`, `warn()`, and `error()` escape their input and treat it as plain text.
 
 Whether codes are actually emitted is decided per stream: a non-empty `NO_COLOR` disables colors, `FORCE_COLOR` forces them on (`FORCE_COLOR=0` or `false` forces them off), and otherwise codes are only written when the stream is a terminal. `COLORTERM` alone does not color redirected output, so redirecting one stream to a file never garbles it while the other stays colored.
+
+### Tables
+
+`Table` renders rows of columns aligned on their visible width — markup tags and multibyte characters don't count, so cells may carry markup:
+
+```php
+use Celema\Console\{Align, Table};
+
+$table = new Table(align: [Align::Left, Align::Right, Align::Right]);
+$table->row(['<strong>Language</strong>', '<strong>Files</strong>', '<strong>Lines</strong>']);
+$table->rule();
+$table->row(['PHP', '11', '1,711']);
+$table->rule();
+$table->row(['<em>Total</em>', '11', '1,711']);
+$io->echo($table->render());
+```
+
+Columns size to their widest cell and are separated by two spaces; alignment is per column (`Align::Left` for unlisted columns), and `rule()` inserts a separator line spanning the table, with the same char handling as `Io::rule()`. A short row leaves its remaining cells empty. Cells don't wrap — a table wider than the terminal simply overflows — so keep cells short.
+
+### Background Blocks
+
+Box-like highlights need no box feature: pad each line to a uniform width, wrap it in a `bg-` tag (backgrounds color the padding spaces), and indent for margin. Empty lines become the vertical padding:
+
+```php
+foreach (['', '  Import failed', '  3 of 120 pages skipped', ''] as $line) {
+    $io->echoln($io->indent('<bg-red>' . $io->pad($line, 44) . '</bg-red>', 2));
+}
+```
+
+With colors off the block collapses to plain indented text — nothing clutters logs or redirected output (bar the padding spaces). Two rules keep the rendering intact: pad inside the tag and indent outside, so the margin stays uncolored; and tag each line separately rather than spanning one pair across lines.
 
 ### Command-Line Arguments
 

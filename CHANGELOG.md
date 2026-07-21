@@ -2,7 +2,11 @@
 
 ## [Unreleased](https://codeberg.org/celema/console/compare/0.5.2...HEAD)
 
-No notable changes since the last release.
+### Added
+
+- `Io::pad()` pads text with spaces to a visible width — markup tags and multibyte characters don't count — aligned `Align::Left`, `Align::Right`, or `Align::Center`. Combined with `bg-` markup and `indent()` it composes into box-like background blocks; see the docs.
+- `Io::choice()` prompts to pick from a numbered list of options and returns the chosen option; an empty answer yields the default, an invalid one asks again.
+- `Table` renders minimal scc-style column output: columns size to their widest cell's visible width, align per column, and `rule()` inserts separator lines. No borders, no cell wrapping.
 
 ## [0.5.2](https://codeberg.org/celema/console/src/tag/0.5.2) (2026-07-21)
 
