@@ -153,6 +153,45 @@ class Io
 		return str_starts_with($answer, 'y');
 	}
 
+	/**
+	 * Asks to pick from a numbered list and returns the chosen option.
+	 *
+	 * The options render one per line, numbered from 1, then the
+	 * prompt shows the default number: `[1]`. An empty answer (or end
+	 * of input) yields the default's option; anything else must be a
+	 * listed number — an invalid answer asks again.
+	 *
+	 * @param list<string> $options
+	 */
+	public function choice(string $question, array $options, int $default = 1): string
+	{
+		if ($options === []) {
+			throw new ValueError('Choice needs options');
+		}
+
+		if ($default < 1 || $default > count($options)) {
+			throw new ValueError("Choice default {$default} is out of range");
+		}
+
+		$this->echoln($question);
+
+		foreach ($options as $i => $option) {
+			$this->echoln('  ' . ($i + 1) . ') ' . $option);
+		}
+
+		while (true) {
+			$answer = $this->ask("[{$default}]");
+
+			if ($answer === '') {
+				return $options[$default - 1];
+			}
+
+			if (ctype_digit($answer) && (int) $answer >= 1 && (int) $answer <= count($options)) {
+				return $options[(int) $answer - 1];
+			}
+		}
+	}
+
 	private function readline(bool $hidden): string
 	{
 		$stream = $this->stdin();

@@ -384,6 +384,46 @@ class IoTest extends TestCase
 		$this->assertTrue($out->confirm('Sure?'));
 	}
 
+	public function testChoiceReturnsTheChosenOption(): void
+	{
+		$out = new BufferedIo("2\n");
+
+		$this->assertSame('staging', $out->choice('Environment?', ['dev', 'staging', 'prod']));
+		$this->assertSame("Environment?\n  1) dev\n  2) staging\n  3) prod\n[1] ", $out->output());
+	}
+
+	public function testChoiceFallsBackToTheDefault(): void
+	{
+		$this->assertSame('dev', new BufferedIo("\n")->choice('Env?', ['dev', 'prod']));
+		$this->assertSame('prod', new BufferedIo("\n")->choice('Env?', ['dev', 'prod'], default: 2));
+		// End of input also yields the default.
+		$this->assertSame('dev', new BufferedIo()->choice('Env?', ['dev', 'prod']));
+	}
+
+	public function testChoiceAsksAgainOnInvalidAnswers(): void
+	{
+		$out = new BufferedIo("x\n0\n9\n2\n");
+
+		$this->assertSame('prod', $out->choice('Env?', ['dev', 'prod']));
+		$this->assertStringEndsWith('[1] [1] [1] [1] ', $out->output());
+	}
+
+	public function testChoiceWithoutOptionsThrows(): void
+	{
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage('Choice needs options');
+
+		new BufferedIo()->choice('Env?', []);
+	}
+
+	public function testChoiceDefaultOutOfRangeThrows(): void
+	{
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage('Choice default 3 is out of range');
+
+		new BufferedIo()->choice('Env?', ['dev', 'prod'], default: 3);
+	}
+
 	public function testConfirmAnswers(): void
 	{
 		$this->assertTrue(new BufferedIo("y\n")->confirm('Sure?'));
