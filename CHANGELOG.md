@@ -5,6 +5,7 @@
 ### Added
 
 - Truecolor hex markup tags with a lowercase six-digit code: `<#ff7313>` and `<bg-#ff7313>`. Such tags previously passed through as unknown text; now they render (and broken pairs throw like any other tag).
+- `Io::rule()` writes a horizontal rule spanning the terminal width, optionally capped by `$max`. The char defaults to `─`, may be a multi-char pattern, and may carry markup — the repeat count uses its visible width, so `$io->rule('<dim>─</dim>')` draws a dim line.
 
 ## [0.5.1](https://codeberg.org/celema/console/src/tag/0.5.1) (2026-07-21)
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Celema\Console;
 
 use RuntimeException;
+use ValueError;
 
 /**
  * The echo methods render the inline console markup, e.g.
@@ -81,6 +82,30 @@ class Io
 	public function error(string $message): void
 	{
 		$this->echolnErr('<red>' . $this->escape($message) . '</red>');
+	}
+
+	/**
+	 * Writes a horizontal rule: the char repeated across the terminal.
+	 *
+	 * `$max` caps the width like in `indent()`. The char may be a
+	 * multi-char pattern and may carry markup — the repeat count uses
+	 * its visible width: `$io->rule('<dim>─</dim>')` draws a dim line.
+	 */
+	public function rule(string $char = '─', ?int $max = null): void
+	{
+		$width = $this->terminalWidth();
+
+		if ($max !== null && $max < $width) {
+			$width = $max;
+		}
+
+		$unit = $this->markup->width($char);
+
+		if ($unit < 1) {
+			throw new ValueError("Rule char '{$char}' has no visible width");
+		}
+
+		$this->echoln(str_repeat($char, intdiv($width, $unit)));
 	}
 
 	/**

@@ -209,6 +209,50 @@ class IoTest extends TestCase
 		$this->assertSame('    Lorem ipsum dolor sit amet', $first[0]);
 	}
 
+	public function testRuleSpansTheTerminalWidth(): void
+	{
+		putenv('COLUMNS=20');
+		$out = new BufferedIo();
+		$out->rule();
+
+		$this->assertSame(str_repeat('─', 20) . PHP_EOL, $out->output());
+	}
+
+	public function testRuleMaxCapsTheWidth(): void
+	{
+		putenv('COLUMNS=20');
+		$out = new BufferedIo();
+		$out->rule(max: 10);
+		$out->rule('=', max: 40);
+
+		$this->assertSame(str_repeat('─', 10) . PHP_EOL . str_repeat('=', 20) . PHP_EOL, $out->output());
+	}
+
+	public function testRuleRepeatsOnTheVisibleWidth(): void
+	{
+		putenv('COLUMNS=5');
+		putenv('FORCE_COLOR=1');
+		$io = new Io('php://output');
+
+		ob_start();
+		$io->rule('<dim>─</dim>');
+		$io->rule('─ ');
+		$out = (string) ob_get_clean();
+
+		$this->assertSame(
+			str_repeat("\033[2m─\033[0m", 5) . PHP_EOL . '─ ─ ' . PHP_EOL,
+			$out,
+		);
+	}
+
+	public function testRuleCharWithoutVisibleWidthThrows(): void
+	{
+		$this->expectException(ValueError::class);
+		$this->expectExceptionMessage("Rule char '<dim></dim>' has no visible width");
+
+		new BufferedIo()->rule('<dim></dim>');
+	}
+
 	public function testMessageHelpers(): void
 	{
 		putenv('FORCE_COLOR=1');

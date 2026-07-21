@@ -98,6 +98,7 @@ The runner validates the signature of the invoked command: `__invoke()` must dec
 - `warn(string $message)` - Output a warning message (yellow, to STDERR)
 - `error(string $message)` - Output an error message (red, to STDERR)
 - `escape(string $text)` - Escape markup tags so the text prints literally
+- `rule(string $char = '─', ?int $max = null)` - Output a horizontal rule spanning the terminal width; `max` caps it. The char may be a multi-char pattern and carry markup — the repeat count uses its visible width: `$io->rule('<dim>─</dim>')` draws a dim line
 - `indent(string $text, int $indent, ?int $max = null)` Indent and wrap text on its visible width; `max` caps the total line width, indent included
 
 The constructor takes the output, error, and input targets (`php://stdout`, `php://stderr`, and `php://stdin` by default). A target that cannot be opened raises a `RuntimeException` on first use. Tests that capture output via output buffering can pass `php://output` instead; note that color detection reports no terminal for it.
